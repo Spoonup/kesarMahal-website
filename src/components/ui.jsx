@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useStore } from '../store';
-import { fmt, imgSrc } from '../data';
+import { fmt } from '../data';
 
 export const cx = (...a) => a.filter(Boolean).join(' ');
 export const PX = 'px-6 lg:px-14';
@@ -54,38 +54,82 @@ export function SectionHead({ eyebrow, title, right }) {
 
 export function ProductCard({ p, ratio = 'aspect-square' }) {
   const { add } = useStore();
-  const [unit, price] = p.sizes[0];
+  const [d] = p.sizes;
+  const multi = p.sizes.length > 1;
   return (
     <div className="group flex flex-col border border-line bg-ivory">
       <Link to={`/product/${p.id}`} className={cx('relative block overflow-hidden', ratio)}>
-        <Photo src={imgSrc(p)} label={p.name} className="transition-transform duration-500 group-hover:scale-105" />
-        <Badge color={p.color} abs>{p.grade}</Badge>
+        <Photo src={p.img} label={p.name} className="transition-transform duration-500 group-hover:scale-105" />
+        <Badge color={p.color} abs>{p.available ? p.category : 'Sold out'}</Badge>
       </Link>
       <div className="flex flex-1 flex-col gap-1 px-5 py-[18px]">
         <Link to={`/product/${p.id}`} className="font-display text-[25px] font-medium leading-[1.1] text-maroon">{p.name}</Link>
-        <span className="mb-3.5 text-[13px] text-muted">{p.sub}</span>
+        <span className="mb-3.5 text-[13px] text-muted">{multi ? `${p.sizes.length} pack sizes` : d.label}</span>
         <div className="mt-auto flex items-center justify-between gap-2 border-t border-line2 pt-3.5">
-          <span className="text-[17px] font-medium">from {fmt(price)} <small className="text-[13px] font-light text-muted">/ {unit}</small></span>
-          <Btn sm onClick={() => add({ key: `${p.id}|${unit}`, kind: 'item', id: p.id, name: p.name, sub: unit, grade: p.grade, color: p.color, img: imgSrc(p), price, qty: 1 })}>ADD</Btn>
+          <span className="text-[17px] font-medium">{multi && 'from '}{fmt(Math.min(...p.sizes.map(s => s.price)))}{d.label && <small className="text-[13px] font-light text-muted"> / {d.label}</small>}</span>
+          <Btn sm disabled={!p.available} onClick={() => add(p, d)}>{p.available ? 'ADD' : 'SOLD OUT'}</Btn>
         </div>
       </div>
     </div>
   );
 }
 
-export const Qty = ({ value, set, big }) => (
-  <div className={cx('inline-flex items-center border', big ? 'border-maroon' : 'border-line')}>
-    <button className={cx('text-maroon', big ? 'h-[52px] w-11 text-xl' : 'w-[34px] py-2')} onClick={() => set(value - 1)} aria-label="Less">−</button>
-    <span className={cx('text-center', big ? 'w-8 font-medium' : 'w-6')}>{value}</span>
-    <button className={cx('text-maroon', big ? 'h-[52px] w-11 text-xl' : 'w-[34px] py-2')} onClick={() => set(value + 1)} aria-label="More">+</button>
+export function SoonCard({ p, ratio = 'aspect-[4/3]' }) {
+  return (
+    <div className="group flex flex-col border border-line bg-ivory">
+      <Link to={`/coming-soon/${p.id}`} className={cx('relative block overflow-hidden', ratio)}>
+        <Photo label={p.name} />
+        <Badge color={p.color} abs>{p.room}</Badge>
+      </Link>
+      <div className="flex flex-1 flex-col gap-1 px-5 py-[18px]">
+        <Link to={`/coming-soon/${p.id}`} className="font-display text-[25px] font-medium leading-[1.1] text-maroon">{p.name}</Link>
+        {p.sub && <span className="text-[13px] text-muted">{p.sub}</span>}
+        <span className="mb-3.5 text-[13px] text-muted">{p.sizes.join(' · ')}</span>
+        <div className="mt-auto flex items-center justify-between gap-2 border-t border-line2 pt-3.5"><Label className="text-gold">Coming soon</Label></div>
+      </div>
+    </div>
+  );
+}
+
+export const Skeleton = ({ n = 6, className = cx('pb-[72px]', PX) }) => (
+  <div className={cx('grid gap-6 min-[560px]:grid-cols-2 lg:grid-cols-3', className)} aria-busy="true" aria-label="Loading products">
+    {Array.from({ length: n }, (_, i) => <div key={i} className="aspect-[4/3] animate-pulse border border-line bg-ivory" />)}
   </div>
 );
 
-export const Field = ({ label, className, ...p }) => (
-  <label className={cx('flex flex-col gap-0.5 border border-line bg-ivory px-3.5 py-2.5 focus-within:border-maroon', className)}>
-    <span className="text-[11px] text-muted">{label}</span>
-    <input className="w-full bg-transparent py-0.5 text-[15px]" {...p} />
-  </label>
+export const ErrorBox = ({ children, retry, className }) => (
+  <div role="alert" className={cx('flex flex-col items-start gap-3 border border-kesar bg-ivory p-4 text-[14.5px] text-kesar', className)}>
+    <span>{children}</span>
+    {retry && <Btn sm ghost onClick={retry}>TRY AGAIN</Btn>}
+  </div>
+);
+
+export const Qty = ({ value, set, big }) => (
+  <div className={cx('inline-flex items-center border', big ? 'border-maroon' : 'border-line')}>
+    <button type="button" className={cx('text-maroon', big ? 'h-[52px] w-11 text-xl' : 'w-[34px] py-2')} onClick={() => set(value - 1)} aria-label="Less">−</button>
+    <span className={cx('text-center', big ? 'w-8 font-medium' : 'w-6')} aria-live="polite">{value}</span>
+    <button type="button" className={cx('text-maroon', big ? 'h-[52px] w-11 text-xl' : 'w-[34px] py-2')} onClick={() => set(value + 1)} aria-label="More">+</button>
+  </div>
+);
+
+export const Field = ({ label, className, area, ...p }) => {
+  const C = area ? 'textarea' : 'input';
+  return (
+    <label className={cx('flex flex-col gap-0.5 border border-line bg-ivory px-3.5 py-2.5 focus-within:border-maroon', className)}>
+      <span className="text-[11px] text-muted">{label}</span>
+      <C className="w-full bg-transparent py-0.5 text-[15px]" {...p} />
+    </label>
+  );
+};
+
+// Plain-text page layout (help, policies). Children are bare h2 / p / ul / a elements.
+export const Prose = ({ eyebrow = 'Help', title, intro, children }) => (
+  <article className={cx('mx-auto flex max-w-[760px] flex-col gap-5 py-14 lg:py-20', PX)}>
+    <Eyebrow>{eyebrow}</Eyebrow>
+    <H1>{title}</H1>
+    {intro && <p className="font-display text-[22px] leading-[1.35] text-maroon">{intro}</p>}
+    <div className="flex flex-col gap-4 text-base font-light leading-[1.7] [&_a]:border-b [&_a]:border-maroon [&_a]:text-maroon [&_h2]:mt-6 [&_h2]:font-display [&_h2]:text-[26px] [&_h2]:font-medium [&_h2]:text-maroon [&_li]:ml-5 [&_li]:list-disc">{children}</div>
+  </article>
 );
 
 export const Lines = ({ children, className }) => <div className={cx('flex flex-col gap-2 text-[14.5px]', className)}>{children}</div>;

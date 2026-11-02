@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { byId, imgSrc, fmt, grades, FREE_SHIP, products } from '../data';
-import { useStore } from '../store';
-import { Photo, Badge, ProductCard, Btn, Label, H1, H2, PX, cx } from '../components/ui';
+import { fmt, grades } from '../data';
+import { useStore, MAX_QTY } from '../store';
+import { Photo, Badge, ProductCard, Skeleton, ErrorBox, Btn, Label, H1, H2, PX, cx } from '../components/ui';
 import NotFound from './NotFound';
 
 const Fold = ({ title, children }) => (
@@ -14,44 +14,45 @@ const Fold = ({ title, children }) => (
 
 export default function Product() {
   const { id } = useParams();
-  const p = byId(id);
-  const { add } = useStore();
-  const nav = useNavigate();
+  const { catalogue, loadCatalogue, byId, add } = useStore();
   const [size, setSize] = useState(0);
   const [qty, setQty] = useState(1);
+  useEffect(() => { setSize(0); setQty(1); }, [id]);
+  if (catalogue.status === 'loading') return <div className="pt-12"><Skeleton n={3} /></div>;
+  if (catalogue.status === 'error') return <div className={cx('py-12', PX)}><ErrorBox retry={loadCatalogue}>{catalogue.error}</ErrorBox></div>;
+  const p = byId(id);
   if (!p) return <NotFound />;
-  const [unit, price] = p.sizes[size];
-  const isSaffron = p.id === 'saf';
-  const item = () => ({ key: `${p.id}|${unit}`, kind: 'item', id: p.id, name: p.name, sub: unit + (isSaffron ? ' · Lot KM-PMP-2611' : ''), grade: p.grade, color: p.color, img: imgSrc(p), price, qty });
-  const more = products.filter(x => x.id !== p.id && x.room === p.room).slice(0, 4);
-  const lot = (l, v, mono) => <div><Label className="mb-1 block text-[10px] text-gold">{l}</Label><div className={mono ? 'font-mono text-[13px] font-medium' : ''}>{v}</div></div>;
+  const s = p.sizes[size] || p.sizes[0];
+  const isSaffron = p.category === 'Saffron';
+  const more = catalogue.products.filter(x => x.id !== p.id && x.category === p.category).slice(0, 4);
   return (
     <>
-      <div className={cx('pt-5 text-[12.5px] text-muted', PX)}><Link to="/shop">Shop</Link> / <Link to={`/shop?room=${p.room}`}>{p.room}</Link> / <span className="text-ink">{p.name}</span></div>
+      <div className={cx('pt-5 text-[12.5px] text-muted', PX)}><Link to="/shop">Shop</Link> / <Link to={`/shop?category=${encodeURIComponent(p.room)}`}>{p.room}</Link> / <span className="text-ink">{p.name}</span></div>
       <div className={cx('grid gap-14 pb-16 pt-6 lg:grid-cols-[1.1fr_1fr]', PX)}>
-        <div className="p-2"><div className="aspect-[4/5] overflow-hidden rounded-t-[240px] outline outline-1 outline-offset-8 outline-gold"><Photo src={imgSrc(p)} label={p.name} /></div></div>
+        <div className="p-2"><div className="aspect-[4/5] overflow-hidden rounded-t-[240px] outline outline-1 outline-offset-8 outline-gold"><Photo src={p.img} label={p.name} /></div></div>
         <div className="flex flex-col gap-[22px] pt-3">
-          <div className="flex flex-wrap items-center gap-2.5"><Badge color={p.color}>{p.grade}{isSaffron ? ' · Finest' : ''}</Badge>{p.iso && <span className="text-[12.5px] text-muted">{p.iso}</span>}</div>
-          <div><H1 className="text-[clamp(44px,5vw,58px)]">{p.name}</H1><p className="mt-2 font-display text-[21px] italic text-pine">{p.tagline || p.sub}</p></div>
+          <div className="flex flex-wrap items-center gap-2.5"><Badge color={p.color}>{p.category}</Badge>{!p.available && <span className="text-[12.5px] font-medium text-kesar">Sold out</span>}</div>
+          <H1 className="text-[clamp(44px,5vw,58px)]">{p.name}</H1>
           {p.desc && <p className="text-[15.5px] font-light leading-[1.65]">{p.desc}</p>}
-          <div className="flex flex-col gap-2.5">
-            <Label className="text-gold">{isSaffron ? 'Weight' : 'Size'}</Label>
-            <div className="flex flex-wrap gap-2.5">{p.sizes.map(([u, pr], i) => (
-              <button key={u} onClick={() => setSize(i)} className={cx('flex min-w-[110px] flex-col items-start gap-0.5 border border-maroon px-5 py-3 text-sm', i === size ? 'bg-maroon text-ivory' : 'text-maroon')}><b className="font-medium">{u}</b><span className="text-xs opacity-80">{fmt(pr)}</span></button>
-            ))}</div>
-          </div>
+          <div className="text-[13px] text-muted">Price excludes GST; GST is added at checkout.</div>
+          {p.sized && (
+            <fieldset className="flex flex-col gap-2.5">
+              <legend className="mb-2.5 font-cinzel text-[11px] uppercase tracking-[.28em] text-gold">Pack size</legend>
+              <div className="flex flex-wrap gap-2.5">{p.sizes.map((z, i) => (
+                <button key={z.id} type="button" aria-pressed={i === size} onClick={() => setSize(i)} className={cx('flex min-w-[110px] flex-col items-start gap-0.5 border border-maroon px-5 py-3 text-sm', i === size ? 'bg-maroon text-ivory' : 'text-maroon')}><b className="font-medium">{z.label}</b><span className="text-xs opacity-80">{fmt(z.price)}</span></button>
+              ))}</div>
+            </fieldset>
+          )}
           <div className="flex flex-wrap items-stretch gap-3">
             <div className="inline-flex items-center border border-maroon">
-              <button className="h-[52px] w-11 text-xl text-maroon" onClick={() => setQty(q => Math.max(1, q - 1))}>−</button><span className="w-8 text-center font-medium">{qty}</span><button className="h-[52px] w-11 text-xl text-maroon" onClick={() => setQty(q => Math.min(9, q + 1))}>+</button>
+              <button type="button" aria-label="Less" className="h-[52px] w-11 text-xl text-maroon" onClick={() => setQty(q => Math.max(1, q - 1))}>−</button><span className="w-8 text-center font-medium" aria-live="polite">{qty}</span><button type="button" aria-label="More" className="h-[52px] w-11 text-xl text-maroon" onClick={() => setQty(q => Math.min(MAX_QTY, q + 1))}>+</button>
             </div>
-            <Btn className="flex-1" onClick={() => add(item())}>ADD TO BAG · {fmt(price * qty)}</Btn>
-            <Btn ghost onClick={() => nav('/gift')}>GIFT IT</Btn>
+            <Btn className="flex-1" disabled={!p.available} onClick={() => add(p, s, qty)}>{p.available ? `ADD TO BAG · ${fmt(s.price * qty)}` : 'SOLD OUT'}</Btn>
           </div>
-          {isSaffron && <div className="grid gap-3.5 border border-line bg-ivory px-5 py-[18px] text-sm min-[480px]:grid-cols-3">{lot('Lot', 'KM-PMP-2611', true)}{lot('Picked', '12 Oct 2026')}{lot('Grower', 'Bhat family, Pampore')}</div>}
           <div className="border-t border-line">
             <Fold title="How to use">{isSaffron ? 'Steep 3–4 threads in warm milk or water for ten minutes before adding to kahwa, phirni or biryani.' : 'Eat as is, or use in cooking, baking and gifting. Pairs well with kahwa.'}</Fold>
-            <Fold title="Lab report & storage">Keep sealed in a cool, dry place away from sunlight. Each lot is lab-tested; trace your lot from the back of the pack.</Fold>
-            <Fold title={`Shipping · 3–5 days, free above ${fmt(FREE_SHIP)}`}>Ships from Srinagar in 3–5 days. Express (1–2 days) available at checkout.</Fold>
+            <Fold title="Storage">Keep sealed in a cool, dry place away from sunlight.</Fold>
+            <Fold title="Shipping">Ships anywhere in India, usually within a few days. Delivery timing is confirmed at checkout.</Fold>
           </div>
         </div>
       </div>
@@ -70,8 +71,8 @@ export default function Product() {
           </div>
         </section>
       )}
-      {more.length > 0 && !isSaffron && (
-        <section className={cx('py-16', PX)}><H2 className="mb-8 text-[40px]">Also from the {p.room} room</H2><div className="grid gap-[22px] min-[480px]:grid-cols-2 lg:grid-cols-4">{more.map(m => <ProductCard key={m.id} p={m} />)}</div></section>
+      {more.length > 0 && (
+        <section className={cx('py-16', PX)}><H2 className="mb-8 text-[40px]">More from {p.category}</H2><div className="grid gap-[22px] min-[480px]:grid-cols-2 lg:grid-cols-4">{more.map(m => <ProductCard key={m.id} p={m} />)}</div></section>
       )}
     </>
   );

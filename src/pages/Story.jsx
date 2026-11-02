@@ -6,11 +6,11 @@ export default function Story() {
   return (
     <>
       <div className="relative h-[min(560px,70vh)]">
-        <Photo src="" label="Dal Lake at dawn" />
+        <img src="/assets/story/dal-lake.jpg" width="1600" height="1600" loading="lazy" alt="Shikara boats on Dal Lake, Srinagar, at sunset with mountains behind" className="block size-full object-cover object-[50%_60%]" />
         <div className="absolute inset-0 bg-gradient-to-t from-ink/85 to-transparent to-60%" />
         <div className={cx('absolute inset-x-0 bottom-12 flex flex-col gap-4', PX)}>
           <Eyebrow className="text-gold2">Our story</Eyebrow>
-          <H1 className="max-w-[880px] text-[clamp(40px,6vw,72px)] text-ivory">A palace window onto the valley.</H1>
+          <H1 className="max-w-[880px] text-[clamp(40px,6vw,72px)] !text-ivory">A palace window onto the valley.</H1>
         </div>
       </div>
       <section className={cx('grid gap-16 py-20 md:grid-cols-2', PX)}>

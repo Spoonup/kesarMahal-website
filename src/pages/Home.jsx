@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { products, rooms, lots } from '../data';
-import { ProductCard, Photo, SectionHead, Btn, ULink, Eyebrow, H2, Diamond, Arch, PX, cx } from '../components/ui';
+import { useStore } from '../store';
+import { lots, categoriesOf } from '../data';
+import { ProductCard, Skeleton, ErrorBox, Photo, SectionHead, Btn, ULink, Eyebrow, H2, Diamond, Arch, PX, cx } from '../components/ui';
 
 const steps = [
   ['I', 'Picked at origin', 'Bought directly from orchard families across Budgam, Kulgam and Pampore. No mandi middlemen.'],
@@ -31,7 +32,10 @@ const Trust = () => (
 );
 
 export default function Home() {
-  const best = ['alm', 'wal', 'mix', 'hny'].map(id => products.find(p => p.id === id));
+  const { catalogue, loadCatalogue } = useStore();
+  const { products } = catalogue;
+  const best = products.filter(p => p.available).slice(0, 4);
+  const cats = categoriesOf(products).slice(0, 4).map(c => ({ name: c, p: products.find(p => p.category === c), n: products.filter(p => p.category === c).length }));
   return (
     <>
       <section className={cx('grid items-center gap-14 pb-[72px] pt-8 lg:grid-cols-[1.05fr_1fr] lg:pt-16', PX)}>
@@ -39,29 +43,32 @@ export default function Home() {
           <Eyebrow>Autumn harvest · 2026</Eyebrow>
           <h1 className="font-display text-[clamp(44px,6vw,78px)] font-medium leading-none text-maroon">Treasures from Kashmir, brought home with ceremony.</h1>
           <p className="max-w-[480px] text-[17px] font-light leading-[1.65]">Almonds from Budgam, walnuts from Kulgam, saffron from Pampore. Bought from growers we know by name, graded by hand, sealed in Srinagar.</p>
-          <div className="flex flex-wrap gap-3.5"><Btn to="/shop">SHOP THE HARVEST</Btn><Btn to="/gift" ghost>BUILD A GIFT BOX</Btn></div>
+          <div className="flex flex-wrap gap-3.5"><Btn to="/shop">SHOP THE HARVEST</Btn></div>
         </div>
         <Arch><img src="/assets/km-logo.jpg" alt="Kesar Mahal crest" className="size-full object-cover" /></Arch>
       </section>
 
       <Trust />
 
-      <section className={cx('py-16', PX)}>
-        <SectionHead eyebrow="The pantry" title="Four rooms of the house" />
-        <div className="grid grid-cols-1 gap-[22px] min-[480px]:grid-cols-2 lg:grid-cols-4">
-          {rooms.map(r => (
-            <Link key={r.id} to={r.to} className="flex flex-col gap-3">
-              <div className="aspect-[3/4] rounded-t-[150px] border border-line bg-ivory p-[7px]"><div className="size-full overflow-hidden rounded-t-[143px]"><Photo src={r.img} label={r.name} /></div></div>
-              <div className="flex items-center gap-2.5 font-display text-[25px] font-medium"><Diamond color={r.color} />{r.name}</div>
-              <span className="-mt-1.5 text-[13.5px] font-light">{r.line}</span>
-            </Link>
-          ))}
-        </div>
-      </section>
+      {cats.length > 0 && (
+        <section className={cx('py-16', PX)}>
+          <SectionHead eyebrow="The pantry" title="Shelves of the house" />
+          <div className="grid grid-cols-1 gap-[22px] min-[480px]:grid-cols-2 lg:grid-cols-4">
+            {cats.map(r => (
+              <Link key={r.name} to={`/shop?category=${encodeURIComponent(r.name)}`} className="flex flex-col gap-3">
+                <div className="aspect-[3/4] rounded-t-[150px] border border-line bg-ivory p-[7px]"><div className="size-full overflow-hidden rounded-t-[143px]"><Photo src={r.p?.img} label={r.name} /></div></div>
+                <div className="flex items-center gap-2.5 font-display text-[25px] font-medium"><Diamond color={r.p?.color} />{r.name}</div>
+                <span className="-mt-1.5 text-[13.5px] font-light">{r.n} {r.n === 1 ? 'product' : 'products'}</span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className={cx('pb-20', PX)}>
-        <SectionHead eyebrow="Most gifted" title="From this season’s harvest" right={<ULink to="/shop">VIEW ALL {products.length}</ULink>} />
-        <div className="grid grid-cols-1 gap-[22px] min-[480px]:grid-cols-2 lg:grid-cols-4">{best.map(p => <ProductCard key={p.id} p={p} />)}</div>
+        <SectionHead eyebrow="From the shelf" title="This season’s harvest" right={<ULink to="/shop">VIEW ALL {products.length || ''}</ULink>} />
+        {catalogue.status === 'loading' ? <Skeleton n={4} className="" /> : catalogue.status === 'error' ? <ErrorBox retry={loadCatalogue}>{catalogue.error}</ErrorBox>
+          : <div className="grid grid-cols-1 gap-[22px] min-[480px]:grid-cols-2 lg:grid-cols-4">{best.map(p => <ProductCard key={p.id} p={p} />)}</div>}
       </section>
 
       <section className={cx('jaali grid items-center gap-14 py-[88px] text-ivory lg:grid-cols-2', PX)}>
@@ -78,16 +85,6 @@ export default function Home() {
               <div><h3 className="mb-1 font-display text-[25px] font-medium text-ivory">{t}</h3><p className="text-[14.5px] leading-[1.6] text-[#EADFD0]">{d}</p></div>
             </div>
           ))}
-        </div>
-      </section>
-
-      <section className={cx('grid items-center gap-14 bg-ivory py-[88px] lg:grid-cols-2', PX)}>
-        <div className="aspect-[5/4] outline outline-1 outline-offset-[10px] outline-gold"><Photo src="/assets/products/mix.png" label="Gift box" /></div>
-        <div className="flex flex-col gap-5">
-          <Eyebrow className="text-crocus">Gifting</Eyebrow>
-          <H2 className="text-[clamp(32px,4vw,50px)]">A box packed the way it would be in Srinagar.</H2>
-          <p className="text-base font-light leading-[1.65]">Choose three to six treasures and a box in maroon or ivory, then write a note. We wrap it in jaali tissue and seal it by hand.</p>
-          <Btn to="/gift" className="self-start">BUILD YOUR BOX</Btn>
         </div>
       </section>
 

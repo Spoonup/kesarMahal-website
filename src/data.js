@@ -1,52 +1,47 @@
-import catalogue from './catalogue.json';
-export const fmt = n => '₹' + n.toLocaleString('en-IN');
-export const FREE_SHIP = 999;
-export const SPOONUP_CREDIT = 150;
+export const fmt = n => { const v = Number(n || 0); const d = Number.isInteger(v) ? 0 : 2; return '₹' + v.toLocaleString('en-IN', { minimumFractionDigits: d, maximumFractionDigits: d }); };
+
+import supplier from './catalogue.json';
+import liveTwin from './liveTwin.json';
 
 const G = '#B08D57';
+const KESAR = '#C2431B';
+const PINE = '#3D5240';
 
-// Catalogue rows (src/catalogue.json) come from kesarlandmart.com: name, category, size → price.
-// Brand extras (photo, grade badge, copy, gift-box eligibility) are layered on by site id below.
-const extras = {
-  5558: { id: 'alm', grade: 'Mamra', img: 'almond', gift: 1, desc: 'Small orchards around Budgam, sun-dried in their shells and graded by hand for size and oil content.' },
-  5518: { id: 'wal', grade: 'Kagzi', img: 'walnut', gift: 1, desc: 'Paper-shell walnuts from Kulgam, cracked and sorted into light, sweet kernels.' },
-  5493: { id: 'saf', grade: 'Mongra', img: '', gift: 1, tagline: 'Kashmiri saffron · stigma tips only · Pampore', iso: 'ISO 3632 Category I', desc: 'The deep-red tips of the crocus stigma, with none of the yellow style left on. Three or four threads colour a whole pot of kahwa.' },
-  5656: { id: 'mix', grade: 'Roasted', img: 'mix', desc: 'A roasted mix of nuts and berries, made for the gift tray.' },
-  5620: { id: 'fig', grade: 'Select', img: 'fig', gift: 1, desc: 'Soft, sun-dried figs with a honeyed centre.' },
-  5742: { id: 'dat', grade: 'Medjool', img: 'dates', gift: 1, desc: 'Large, soft dates with a caramel finish.' },
-  5734: { id: 'cas', grade: 'W240', img: 'cashew', gift: 1, desc: 'Whole W240 cashews, creamy and lightly sweet.' },
-  5604: { id: 'hny', grade: 'Raw', img: 'honey', gift: 1, desc: 'Raw single-flower acacia honey from the Kashmir hills. Clear, mild and slow to set.' },
-  5763: { id: 'kkh', grade: 'Kesar', gift: 1, desc: 'Green tea, cardamom, cinnamon and saffron, with almond to finish. Brew in a samovar or a pot.' },
-  5563: { id: 'cra', grade: 'Whole', img: 'cranberry' },
-  5574: { id: 'plm', grade: 'Whole', img: 'plum' },
-  5567: { id: 'blk', grade: 'Whole', img: 'blackberry' }
+// Shelf order for the live Pantry catalogue; unknown categories follow alphabetically.
+export const CATEGORY_ORDER = ['Dry Fruits', 'Kashmiri Dry Fruits', 'Dried Berries', 'Honey', 'Saffron', 'Healthy Breakfast', 'Food'];
+const rank = c => { const i = CATEGORY_ORDER.indexOf(c); return i < 0 ? CATEGORY_ORDER.length : i; };
+export const categoryColor = c => (c === 'Saffron' ? KESAR : c === 'Healthy Breakfast' || c === 'Food' ? PINE : G);
+
+export const sortShelf = list => [...list].sort((a, b) => rank(a.category) - rank(b.category) || a.category.localeCompare(b.category));
+export const categoriesOf = list => [...new Set(sortShelf(list).map(p => p.category).filter(Boolean))];
+
+// Server product -> what the UI uses. `sizes` is always non-empty; an unsized product gets one price-only entry.
+export const adapt = p => {
+  const sized = p.sizes?.length;
+  return {
+    id: p.id, name: p.name, category: p.category || 'Pantry', room: ROOM_OF[p.category] || p.category || 'Pantry', desc: p.description || '', img: p.imageUrl || '',
+    available: p.isAvailable !== false, color: categoryColor(p.category), sized,
+    sizes: sized ? p.sizes.map(s => ({ id: s.id, label: s.label, price: Number(s.price) })) : [{ id: undefined, label: '', price: Number(p.price) }]
+  };
 };
 
-// Category colour coding from the brand guide; rooms beyond the original four reuse the accents.
-export const roomColor = { 'Dry Fruits': G, Kesar: '#C2431B', Kahwa: '#3D5240', Honey: G, Seeds: G, Spices: '#C2431B', Oils: '#3D5240', Beauty: '#8A5E9C', Health: '#3D5240' };
-export const roomList = ['Dry Fruits', 'Kesar', 'Kahwa', 'Honey', 'Seeds', 'Spices', 'Oils', 'Beauty', 'Health'];
+// Room (shop filter) for a live category; categories not listed are their own room.
+const ROOM_OF = { 'Kashmiri Dry Fruits': 'Dry Fruits', 'Dried Berries': 'Dry Fruits', Saffron: 'Kesar' };
+const roomColor = r => (r === 'Kesar' ? KESAR : r === 'Kahwa' || r === 'Healthy Breakfast' || r === 'Food' ? PINE : G);
+const ROOMS = ['Dry Fruits', 'Kesar', 'Kahwa', 'Honey', 'Seeds', 'Spices', 'Oils', 'Beauty', 'Health'];
 
-export const products = catalogue.map(r => {
-  const x = extras[r.id] || {};
-  return {
-    id: x.id || 'p' + r.id, room: r.room, grade: x.grade || r.room, name: r.name, sub: r.sub, color: roomColor[r.room],
-    img: x.img || '', sizes: r.sizes, unit: r.sizes[0][0], gift: x.gift ? r.sizes[0] : undefined,
-    desc: x.desc, tagline: x.tagline, iso: x.iso
-  };
-});
-export const byId = id => products.find(p => p.id === id);
-export const imgSrc = p => (p.img ? `/assets/products/${p.img}.png` : '');
+// Coming-soon items: facts only (name, sizes) from the supplier snapshot in catalogue.json. Supplier prices are
+// reference for the owner, never shown or sold; these items never enter the bag. Same ids as the CSV in docs/.
+// A snapshot row is hidden when the live shop has the same product: supplier id -> exact live name
+// (liveTwin.json, verified against spoonupfoods.com; see docs/LIVE-MATCH.md). Unmatched rows stay "Coming soon".
+export const soonItems = live => supplier
+  .filter(r => !(liveTwin[r.id] && live.some(p => p.name === liveTwin[r.id])))
+  .map(r => ({ id: String(r.id), name: r.name, sub: r.sub, room: r.room, color: roomColor(r.room), sizes: r.sizes.map(z => z[0]).filter(Boolean), soon: true }));
+// Chips: live rooms in live shelf order, then the remaining rooms.
+export const roomsOf = (live, soon) => [...new Set([...live.map(p => p.room), ...ROOMS, ...soon.map(p => p.room)])].filter(r => live.some(p => p.room === r) || soon.some(p => p.room === r));
 
-export const boxes = [{ name: 'Shikara', n: 3, price: 250 }, { name: 'Chinar', n: 4, price: 350 }, { name: 'Mahal', n: 6, price: 500 }];
-export const colours = [{ name: 'Maroon', hex: '#6B1426' }, { name: 'Ivory', hex: '#E9E0CF' }];
-export const treasures = products.filter(p => p.gift);
+export const lineKey = (productId, sizeId) => `${productId}|${sizeId ?? ''}`;
 
-export const rooms = [
-  { id: 'df', name: 'Dry Fruits', line: 'Almonds, walnuts, figs, dates, honey', color: G, img: '/assets/products/mix.png', to: '/shop?room=Dry%20Fruits' },
-  { id: 'ks', name: 'Kesar', line: 'Mongra & Lacha saffron', color: '#C2431B', to: '/shop?room=Kesar' },
-  { id: 'kh', name: 'Kahwa', line: 'Teas & samovar blends', color: '#3D5240', to: '/shop?room=Kahwa' },
-  { id: 'gf', name: 'Gifting', line: 'Boxes for Eid, Diwali & weddings', color: '#8A5E9C', to: '/gift' }
-];
 export const grades = [
   { name: 'Mongra', tag: 'Finest', bar: '100%', d: 'Only the deep-red stigma tips. Strongest colour and aroma.', use: 'For kahwa, phirni, biryani' },
   { name: 'Lacha', tag: 'Classic', bar: '70%', d: 'Stigma with a little yellow style attached. Gentler, everyday.', use: 'For milk, sweets, daily cooking' },
