@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+@theme {
+  --color-maroon: #6B1426;
+  --color-ivory: #F5F1EA;
+  --color-ink: #2A1E1A;
+  --color-gold: #B08D57;
+  --color-gold2: #D9BD8A;
+  --color-kesar: #C2431B;
+  --color-crocus: #8A5E9C;
+  --color-pine: #3D5240;
+  --color-paper: #EFEAE2;
+  --color-line: #CDBB9C;
+  --color-line2: #E0D4BF;
+  --color-muted: #6E5F55;
+  --font-sans: Jost, sans-serif;
+  --font-display: 'Cormorant Garamond', serif;
+  --font-cinzel: Cinzel, serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --breakpoint-nav: 74rem;
+}
+
+@layer base {
+  body { @apply bg-paper text-ink font-sans antialiased; }
+  button { @apply cursor-pointer; }
+  input, textarea { @apply outline-none; }
+}
+
+/* Mughal jaali lattice from the brand guide, used as ground for maroon panels. */
+@utility jaali {
+  background-color: var(--color-maroon);
+  background-image:
+    repeating-linear-gradient(45deg, transparent 0 17px, rgba(176,141,87,.22) 17px 18px),
+    repeating-linear-gradient(-45deg, transparent 0 17px, rgba(176,141,87,.22) 17px 18px);
+}
+@utility jaali-light {
+  background-color: #E9E4DC;
+  background-image:
+    repeating-linear-gradient(45deg, transparent 0 17px, rgba(176,141,87,.25) 17px 18px),
+    repeating-linear-gradient(-45deg, transparent 0 17px, rgba(176,141,87,.25) 17px 18px);
+}
