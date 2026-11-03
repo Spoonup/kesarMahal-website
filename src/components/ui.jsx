@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useStore } from '../store';
 import { fmt } from '../data';
@@ -54,38 +55,37 @@ export function SectionHead({ eyebrow, title, right }) {
 
 export function ProductCard({ p, ratio = 'aspect-square' }) {
   const { add } = useStore();
-  const [d] = p.sizes;
-  const multi = p.sizes.length > 1;
+  const sizes = p.sizes.filter(z => z.price > 0);
+  const [pick, setPick] = useState(0);
+  const z = sizes[pick] || sizes[0];
+  const to = `/product/${p.id}`;
+  const ok = p.available && !!z;
   return (
     <div className="group flex flex-col border border-line bg-ivory">
-      <Link to={`/product/${p.id}`} className={cx('relative block overflow-hidden', ratio)}>
+      <Link to={to} className={cx('relative block overflow-hidden', ratio)}>
         <Photo src={p.img} label={p.name} className="transition-transform duration-500 group-hover:scale-105" />
         <Badge color={p.color} abs>{p.available ? p.category : 'Sold out'}</Badge>
       </Link>
-      <div className="flex flex-1 flex-col gap-1 px-5 py-[18px]">
-        <Link to={`/product/${p.id}`} className="font-display text-[25px] font-medium leading-[1.1] text-maroon">{p.name}</Link>
-        <span className="mb-3.5 text-[13px] text-muted">{multi ? `${p.sizes.length} pack sizes` : d.label}</span>
-        <div className="mt-auto flex items-center justify-between gap-2 border-t border-line2 pt-3.5">
-          <span className="text-[17px] font-medium">{multi && 'from '}{fmt(Math.min(...p.sizes.map(s => s.price)))}{d.label && <small className="text-[13px] font-light text-muted"> / {d.label}</small>}</span>
-          <Btn sm disabled={!p.available} onClick={() => add(p, d)}>{p.available ? 'ADD' : 'SOLD OUT'}</Btn>
+      <div className="flex flex-1 flex-col px-5 pb-5 pt-[18px]">
+        <Link to={to} className="font-display text-[25px] font-medium leading-[1.1] text-maroon decoration-gold decoration-1 underline-offset-4 hover:underline">{p.name}</Link>
+        <i className="my-3 block h-px w-8 bg-gold" />
+        <p className="line-clamp-2 min-h-[2.5em] font-display text-[15.5px] italic leading-[1.25] text-ink/75">{p.desc}</p>
+        {sizes.length > 1 && (
+          <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Pack size">
+            {sizes.map((s, i) => (
+              <button key={s.id} type="button" aria-pressed={i === pick} onClick={() => setPick(i)}
+                className={cx('min-h-11 rounded-full border px-4 text-[13px]', i === pick ? 'border-maroon bg-maroon text-ivory' : 'border-line text-ink hover:border-maroon')}>{s.label}</button>
+            ))}
+          </div>
+        )}
+        <div className="mt-auto flex flex-col gap-3 pt-4">
+          <div className="flex items-baseline justify-between gap-2">
+            <span className="text-[19px] font-medium">{z ? fmt(z.price) : ''}{z?.label && <small className="text-[13px] font-light text-muted"> / {z.label}</small>}</span>
+            <Link to={to} className="font-cinzel text-[10px] uppercase tracking-[.22em] text-gold hover:text-maroon">View details</Link>
+          </div>
+          <button type="button" disabled={!ok} onClick={() => add(p, z)}
+            className="min-h-11 border border-maroon bg-maroon font-cinzel text-[12px] uppercase tracking-[.22em] text-ivory hover:bg-[#561020] disabled:cursor-not-allowed disabled:border-[#9C8C80] disabled:bg-[#9C8C80]">{ok ? 'Add to bag' : 'Sold out'}</button>
         </div>
-      </div>
-    </div>
-  );
-}
-
-export function SoonCard({ p, ratio = 'aspect-[4/3]' }) {
-  return (
-    <div className="group flex flex-col border border-line bg-ivory">
-      <Link to={`/coming-soon/${p.id}`} className={cx('relative block overflow-hidden', ratio)}>
-        <Photo label={p.name} />
-        <Badge color={p.color} abs>{p.room}</Badge>
-      </Link>
-      <div className="flex flex-1 flex-col gap-1 px-5 py-[18px]">
-        <Link to={`/coming-soon/${p.id}`} className="font-display text-[25px] font-medium leading-[1.1] text-maroon">{p.name}</Link>
-        {p.sub && <span className="text-[13px] text-muted">{p.sub}</span>}
-        <span className="mb-3.5 text-[13px] text-muted">{p.sizes.join(' · ')}</span>
-        <div className="mt-auto flex items-center justify-between gap-2 border-t border-line2 pt-3.5"><Label className="text-gold">Coming soon</Label></div>
       </div>
     </div>
   );
@@ -136,3 +136,41 @@ export const Lines = ({ children, className }) => <div className={cx('flex flex-
 export const Line = ({ total, className, children }) => (
   <div className={cx('flex justify-between gap-3', total && 'mt-1 border-t border-line pt-3 text-[19px] font-medium', className)}>{children}</div>
 );
+
+// Dark, full-width "Continue with Google" button (Google's round G on ivory).
+export const GoogleBtn = ({ children = 'Continue with Google', ...p }) => (
+  <button type="button" className="flex w-full items-center justify-center gap-3 bg-ink px-6 py-3.5 text-[15px] text-ivory transition-colors hover:bg-maroon" {...p}>
+    <span className="grid size-6 place-items-center rounded-full bg-ivory"><svg viewBox="0 0 48 48" className="size-4" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7a14.5 14.5 0 010-9.4l-7.9-6.1a24 24 0 000 21.6l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg></span>
+    {children}
+  </button>
+);
+
+// Quiet typographic shelf filter: Cinzel caps, gold thread under the active/hovered item, hairline under the row.
+// Scrolls sideways on small screens (right-edge fade hints at more) and keeps the active item in view.
+export function ShelfTabs({ items, active, onPick, className }) {
+  const row = useRef(null);
+  const [more, setMore] = useState(false);
+  const check = () => { const r = row.current; if (r) setMore(r.scrollLeft + r.clientWidth < r.scrollWidth - 4); };
+  useEffect(() => {
+    const r = row.current, el = r?.querySelector('[aria-pressed="true"]');
+    if (el && (el.offsetLeft + el.offsetWidth > r.scrollLeft + r.clientWidth || el.offsetLeft < r.scrollLeft)) r.scrollTo({ left: el.offsetLeft - (r.clientWidth - el.offsetWidth) / 2, behavior: 'smooth' });
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, [active, items.map(i => i.count).join()]);
+  return (
+    <nav aria-label="Shop by shelf" className={cx('border-b border-line', className)}>
+      <div ref={row} onScroll={check} className={cx('relative flex snap-x overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden', more && '[mask-image:linear-gradient(to_right,#000_calc(100%-48px),transparent)]')}>
+        {items.map(({ label, count }) => {
+          const on = label === active;
+          return (
+            <button key={label} type="button" onClick={() => onPick(label)} aria-pressed={on} className={cx('group relative min-h-11 shrink-0 snap-center whitespace-nowrap px-2.5 font-cinzel text-[11.5px] uppercase tracking-[.14em] outline-none transition-colors first:pl-0 focus-visible:text-maroon focus-visible:ring-1 focus-visible:ring-gold', on ? 'text-maroon' : 'text-ink/60 hover:text-maroon')}>
+              {label}{count != null && <span className="ml-1.5 text-[10px] tracking-[.1em] text-ink/40">{count}</span>}
+              <span aria-hidden className={cx('absolute inset-x-2.5 bottom-0 h-0.5 origin-left bg-gold transition-transform duration-300 group-first:left-0', on ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100 group-focus-visible:scale-x-100')} />
+            </button>
+          );
+        })}
+      </div>
+    </nav>
+  );
+}

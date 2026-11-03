@@ -73,6 +73,9 @@ export const api = {
   order: id => request(`/api/orders/${encodeURIComponent(id)}`, { orderToken: getOrderToken(id) }),
   signup: body => post('/api/auth/signup', body),
   login: body => post('/api/auth/login', body),
+  // Google sign-in is a server-side redirect flow: the browser is sent to googleStartUrl, Google returns to the backend, which redirects to /auth/google/callback?code=...; googleExchange swaps that one-time code for the session.
+  googleStartUrl: next => `${BASE}/api/auth/google${next ? `?next=${encodeURIComponent(next)}` : ''}`,
+  googleExchange: code => post('/api/auth/google/exchange', { code }),
   logout: () => post('/api/auth/logout').catch(() => ({})),
   me: () => request('/api/auth/me'),
   myOrders: () => request('/api/me/orders'),

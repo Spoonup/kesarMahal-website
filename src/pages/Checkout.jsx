@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useStore, useQuote } from '../store';
 import { api, friendly, rememberOrder } from '../api';
-import { fmt, lineKey } from '../data';
+import { fmt, giftNotes } from '../data';
 import { Wordmark } from '../components/Chrome';
 import { Totals, payable } from '../components/Summary';
 import { Field, Btn, Label, H2, ErrorBox, PX, cx } from '../components/ui';
@@ -38,7 +38,7 @@ const payWithRazorpay = (prepared, prefill) => new Promise((resolve, reject) => 
 });
 
 export default function Checkout() {
-  const { lines, user, settings, byId, clear } = useStore();
+  const { lines, gifts, user, settings, byId, clear } = useStore();
   const nav = useNavigate();
   const [f, setF] = useState({ name: '', phone: '', email: '', line1: '', landmark: '', city: '', pincode: '' });
   const [saved, setSaved] = useState([]);
@@ -93,6 +93,7 @@ export default function Checkout() {
         customerName: f.name.trim(), customerPhone: f.phone, customerEmail: f.email.trim(),
         lines: lines.map(l => ({ id: l.productId, sizeId: l.sizeId, quantity: l.qty })),
         paymentMethod: online ? 'online' : 'counter',
+        ...(giftNotes(lines, gifts) ? { notes: giftNotes(lines, gifts) } : {}),
         ...(coupon ? { couponCode: coupon } : {}),
         deliveryAddress: { line1: f.line1.trim(), landmark: f.landmark.trim(), city: f.city.trim(), pincode: f.pincode }
       });
@@ -151,8 +152,8 @@ export default function Checkout() {
           {error && <ErrorBox>{friendly(error)} <Link to="/bag" className="underline">Back to bag</Link></ErrorBox>}
           {quote && (
             <div className="flex flex-col gap-2">
-              {quote.lines.map(l => (
-                <div key={lineKey(l.productId, l.sizeId)} className="flex justify-between gap-3"><span className="font-light">{byId(l.productId)?.name || l.name}{l.sizeLabel ? `, ${l.sizeLabel}` : ''}{l.quantity > 1 ? ` × ${l.quantity}` : ''}</span><span>{fmt(l.baseAmount)}</span></div>
+              {quote.lines.map((l, i) => (
+                <div key={i} className="flex justify-between gap-3"><span className="font-light">{byId(l.productId)?.name || l.name}{l.sizeLabel ? `, ${l.sizeLabel}` : ''}{l.quantity > 1 ? ` × ${l.quantity}` : ''}</span><span>{fmt(l.baseAmount)}</span></div>
               ))}
             </div>
           )}

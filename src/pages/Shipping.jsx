@@ -6,7 +6,7 @@ export default function Shipping() {
   return (
     <Prose title="Shipping & delivery" intro="Everything in the Pantry ships across India, packed and sealed in Srinagar.">
       <h2>Where we deliver</h2>
-      <p>Pantry products (saffron, dry fruits, kahwa) are delivered anywhere in India. Items marked coming soon cannot be ordered yet.</p>
+      <p>Pantry products (saffron, dry fruits, kahwa) are delivered anywhere in India.</p>
       <h2>Delivery charge</h2>
       <p>We do not charge for shipping at the moment. The total on your bag page is exactly what you pay, plus GST at checkout.</p>
       <h2>How long it takes</h2>

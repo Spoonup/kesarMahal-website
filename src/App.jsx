@@ -5,13 +5,14 @@ import { useStore } from './store';
 import Home from './pages/Home';
 import Shop from './pages/Shop';
 import Product from './pages/Product';
-import Soon from './pages/Soon';
+import Gifting from './pages/Gifting';
 import Bag from './pages/Bag';
 import Checkout from './pages/Checkout';
 import Confirmed from './pages/Confirmed';
 import Account from './pages/Account';
 import Story from './pages/Story';
 import SignIn from './pages/SignIn';
+import GoogleCallback from './pages/GoogleCallback';
 import Contact from './pages/Contact';
 import Shipping from './pages/Shipping';
 import Returns from './pages/Returns';
@@ -40,8 +41,8 @@ export default function App() {
       <Route element={<Shell />}>
         <Route index element={<Home />} />
         <Route path="shop" element={<Shop />} />
+        <Route path="gifting" element={<Gifting />} />
         <Route path="product/:id" element={<Product />} />
-        <Route path="coming-soon/:id" element={<Soon />} />
         <Route path="bag" element={<Bag />} />
         <Route path="account" element={<Account />} />
         <Route path="story" element={<Story />} />
@@ -58,6 +59,7 @@ export default function App() {
       <Route path="checkout" element={<Checkout />} />
       <Route path="confirmed/:id" element={<Confirmed />} />
       <Route path="signin" element={<SignIn />} />
+      <Route path="auth/google/callback" element={<GoogleCallback />} />
     </Routes>
   );
 }

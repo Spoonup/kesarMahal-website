@@ -24,10 +24,14 @@ The script does one read-only, unauthenticated GET of the public catalogue, then
 
 ## Switching to production later
 
-The storefront never points at production by default. Only the owner switches it on, by building with the env var: `VITE_API_BASE=https://spoonupfoods.com npm run build` (check CORS first, see `docs/BACKEND-REQUESTS.md`). The same build then shows the real catalogue; coming-soon rows hide automatically when a product with the mapped name (`src/liveTwin.json`) exists.
+The storefront never points at production by default. Only the owner switches it on, by building with the env var: `VITE_API_BASE=https://spoonupfoods.com npm run build` (check CORS first, see `docs/BACKEND-REQUESTS.md`). The same build then shows the real catalogue.
 
 Stubs: lot tracing and the footer newsletter box are not wired to anything.
 
 ## Deploying
 
 The app uses `BrowserRouter`, so the host must serve `index.html` for every path: `vercel.json` (Vercel) and `public/_redirects` (Netlify/Cloudflare Pages) both do this; use the one for your host. Set `VITE_API_BASE` at build time or add an `/api` rewrite on the host. A cross-origin backend needs CORS for this site.
+
+## Google sign-in
+
+Uses the SpoonUp backend's server-side flow (`GET /api/auth/google` -> Google -> backend callback -> `/auth/google/callback?code=` -> `POST /api/auth/google/exchange`). The client ID/secret live only in the backend (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`); the storefront needs no Google env var. It works only when `/api/settings` reports `googleAuthEnabled` and the site and `/api` share an origin (dev proxy or production reverse proxy). See `docs/BACKEND-REQUESTS.md` #10.

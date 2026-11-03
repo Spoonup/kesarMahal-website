@@ -9,12 +9,12 @@ Things the Kesar Mahal storefront would like changed in the backend. Nothing her
 5. **Order access for guests on a new device.** A guest can only reopen an order with the `x-order-token` stored in the browser that placed it. A "look up my order" flow (order number + phone, or an emailed link) would help.
 6. **CORS for production.** If the API is served from a different origin than the storefront, `ALLOWED_ORIGINS` (or equivalent) must include the storefront domain.
 
-## Catalogue for the SpoonUp admin
-
-`docs/catalogue-for-admin.csv` lists the 55 "coming soon" products (id, name, sub, room, size label, supplier price) from the supplier's public store (kesarlandmart.com). The prices are reference only: set Kesar Mahal's own prices when entering products in the admin. Once a product is live in the admin, remove or hide its row in `src/catalogue.json` (or add it to `src/liveTwin.json` with its exact live name).
-
 7. **Saffron 5g size has no price on live.** `Kashmiri Mongra Saffron (Pure)` returns a size `5g` with `price: null`; the admin should fix it. 'Kashmir ke Blackberries (100% Pure)' has no sizes and is sold out.
 
 8. **Honour `x-storefront: kesarmahal`.** Every storefront call now sends this header. `GET /api/products` (and `/api/cart/quote`, `/api/checkout/prepare`) should honour it: return only `DELIVERY_IN_DAYS` items, and reject any other product with code `NOT_AVAILABLE_ON_STOREFRONT`. The local backend currently returns 37 products (32 Pantry + 5 Eat Now) with or without the header; the storefront keeps a client-side `DELIVERY_IN_DAYS` filter as a safety net.
 
 9. **Contact form endpoint.** The /contact page has no API to post to, so the form opens a prefilled `mailto:` to the support email. Suggest `POST /api/contact` `{ name, email, phone?, orderNumber?, message }` (rate-limited, emails support), after which the form can send in place.
+
+10. **Google sign-in for the storefront origin.** The backend uses the Authorization Code flow with one fixed `GOOGLE_REDIRECT_URI`, a `spoonup_oauth_state` cookie on `/api/auth/google`, and a relative redirect to `/auth/google/callback?code=` (the SpoonUp SPA). It has no ID-token endpoint. For Kesar Mahal to use it: (a) the storefront must be served on the same origin as `/api` (or the backend must allow-list a return origin and redirect there with an absolute URL); (b) add that origin's `/api/auth/google/callback` to the OAuth client's Authorized redirect URIs and make `GOOGLE_REDIRECT_URI` per-origin (it is a single env value today, so a second domain needs a code change); (c) `safeNextPath` should keep working for `/` paths. Alternative if the storefront stays on its own domain: add `POST /api/auth/google/credential { credential }` verifying a Google ID token (audience = a list of allowed client IDs) and returning `{ token, user }`; the storefront could then use Google Identity Services with `VITE_GOOGLE_CLIENT_ID`.
+
+11. **Gift boxes.** Create the three box products in the admin (`docs/GIFT-BOXES.md`), and have `/api/checkout/prepare` accept `notes` (string, <= 250) and show it on the order.

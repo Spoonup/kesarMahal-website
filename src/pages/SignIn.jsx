@@ -2,22 +2,27 @@ import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useStore } from '../store';
 import { api, friendly } from '../api';
-import { Btn, H1, Arch, ErrorBox } from '../components/ui';
+import { Btn, H1, Arch, ErrorBox, GoogleBtn } from '../components/ui';
 
 const Field = ({ label, ...p }) => (
   <label className="flex flex-col border border-line bg-ivory px-4 py-3 focus-within:border-maroon"><span className="text-[11.5px] text-muted">{label}</span><input className="mt-0.5 w-full bg-transparent text-[17px]" {...p} /></label>
 );
 
 export default function SignIn() {
-  const { signIn } = useStore();
+  const { signIn, settings } = useStore();
   const nav = useNavigate();
   const [params] = useSearchParams();
   const next = params.get('next');
+  const safeNext = next && next.startsWith('/') && !next.startsWith('//') ? next : '';
   const [mode, setMode] = useState('login');
   const [f, setF] = useState({ username: '', password: '', email: '', phone: '' });
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
   const set = k => e => setF(s => ({ ...s, [k]: e.target.value }));
+  const google = () => {
+    if (!settings?.googleAuthEnabled) return setErr("Google sign-in isn't switched on yet. Please use your username and password for now.");
+    window.location.assign(api.googleStartUrl(safeNext));
+  };
   const signup = mode === 'signup';
   const submit = async e => {
     e.preventDefault();
@@ -28,7 +33,7 @@ export default function SignIn() {
         ? await api.signup({ username: f.username.trim(), password: f.password, email: f.email.trim(), phone: f.phone })
         : await api.login({ username: f.username.trim(), password: f.password });
       signIn(r);
-      nav(next && next.startsWith('/') && !next.startsWith('//') ? next : '/account', { replace: true });
+      nav(safeNext || '/account', { replace: true });
     } catch (ex) { setErr(friendly(ex)); setBusy(false); }
   };
   return (
@@ -38,6 +43,9 @@ export default function SignIn() {
         <Link to="/" className="font-cinzel text-2xl font-medium text-maroon">Kesar Mahal</Link>
         <H1 className="text-[clamp(36px,4.4vw,50px)] leading-[1.04]">{signup ? 'Join the house.' : 'Welcome back to the house.'}</H1>
         <p className="text-[15px] font-light leading-[1.6]">Your orders and saved addresses, in one place. You can also check out as a guest.</p>
+        {!signup && <p className="text-[14px] font-light text-muted">Already shop with SpoonUp? Sign in with the same account here.</p>}
+        <GoogleBtn onClick={google} />
+        <div className="flex items-center gap-4 text-[11px] uppercase tracking-[0.2em] text-muted"><span className="h-px flex-1 bg-line" />or use your account<span className="h-px flex-1 bg-line" /></div>
         <Field label={signup ? 'Username (3-32 letters, numbers, underscores)' : 'Username or email'} required autoComplete="username" value={f.username} onChange={set('username')} />
         {signup && <Field label="Email" type="email" required autoComplete="email" value={f.email} onChange={set('email')} />}
         {signup && <Field label="Mobile (10 digits)" required inputMode="numeric" pattern="[0-9]{10}" maxLength={10} autoComplete="tel-national" value={f.phone} onChange={e => setF(s => ({ ...s, phone: e.target.value.replace(/\D/g, '') }))} />}

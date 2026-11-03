@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useStore } from '../store';
-import { lots, categoriesOf } from '../data';
+import { lots, categoriesOf, isBox } from '../data';
 import { ProductCard, Skeleton, ErrorBox, Photo, SectionHead, Btn, ULink, Eyebrow, H2, Diamond, Arch, PX, cx } from '../components/ui';
 
 const steps = [
@@ -33,9 +33,9 @@ const Trust = () => (
 
 export default function Home() {
   const { catalogue, loadCatalogue } = useStore();
-  const { products } = catalogue;
+  const products = catalogue.products.filter(p => !isBox(p));
   const best = products.filter(p => p.available).slice(0, 4);
-  const cats = categoriesOf(products).slice(0, 4).map(c => ({ name: c, p: products.find(p => p.category === c), n: products.filter(p => p.category === c).length }));
+  const cats = categoriesOf(products).slice(0, 4).map(c => ({ name: c, p: products.find(p => p.room === c), n: products.filter(p => p.room === c).length }));
   return (
     <>
       <section className={cx('grid items-center gap-14 pb-[72px] pt-8 lg:grid-cols-[1.05fr_1fr] lg:pt-16', PX)}>

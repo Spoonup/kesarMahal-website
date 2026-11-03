@@ -33,7 +33,7 @@ export default function Product() {
         <div className="flex flex-col gap-[22px] pt-3">
           <div className="flex flex-wrap items-center gap-2.5"><Badge color={p.color}>{p.category}</Badge>{!p.available && <span className="text-[12.5px] font-medium text-kesar">Sold out</span>}</div>
           <H1 className="text-[clamp(44px,5vw,58px)]">{p.name}</H1>
-          {p.desc && <p className="text-[15.5px] font-light leading-[1.65]">{p.desc}</p>}
+          {p.desc && <p className="border-l border-gold pl-4 font-display text-[22px] italic leading-[1.35] text-ink/80">{p.desc}</p>}
           <div className="text-[13px] text-muted">Price excludes GST; GST is added at checkout.</div>
           {p.sized && (
             <fieldset className="flex flex-col gap-2.5">

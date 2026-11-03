@@ -9,7 +9,7 @@ export default function Terms() {
       <h2>Payment</h2>
       <p>Online through Razorpay when available, otherwise pay on delivery.</p>
       <h2>Delivery</h2>
-      <p>We ship Pantry products across India. See <Link to="/shipping">Shipping & delivery</Link>. Coming-soon items cannot be ordered.</p>
+      <p>We ship Pantry products across India. See <Link to="/shipping">Shipping & delivery</Link>.</p>
       <h2>Returns</h2>
       <p>See <Link to="/returns">Returns & refunds</Link>.</p>
       <h2>Who we are</h2>

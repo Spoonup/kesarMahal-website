@@ -7,7 +7,7 @@ export default function NotFound() {
       <Label className="text-xs tracking-[.36em] text-gold">Error 404</Label>
       <H1 className="text-[clamp(40px,6vw,64px)]">This treasure has wandered off.</H1>
       <p className="max-w-[460px] text-base font-light leading-[1.6]">Perhaps it took a shikara across the lake. The rest of the house is just where you left it.</p>
-      <div className="flex flex-wrap justify-center gap-3.5"><Btn to="/">BACK TO THE HOUSE</Btn><Btn to="/shop?room=Kesar" ghost>SHOP KESAR</Btn></div>
+      <div className="flex flex-wrap justify-center gap-3.5"><Btn to="/">BACK TO THE HOUSE</Btn><Btn to="/shop?category=Kesar" ghost>SHOP KESAR</Btn></div>
     </div>
   );
 }
