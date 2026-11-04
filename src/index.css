@@ -6,11 +6,15 @@
   --color-ink: #2A1E1A;
   --color-gold: #B08D57;
   --color-gold2: #D9BD8A;
+  /* Text-safe gold: Zari Gold #B08D57 is only 2.75:1 on Ivory, so it stays for hairlines and decoration. Use this darker gold for
+     small text on ivory/paper (5.17:1 on #F5F1EA, 4.86:1 on #EFEAE2). Gold text on dark grounds uses gold2. */
+  --color-goldtext: #7F6029;
   --color-kesar: #C2431B;
   --color-crocus: #8A5E9C;
   --color-pine: #3D5240;
   --color-paper: #EFEAE2;
   --color-line: #CDBB9C;
+  --color-field: #8C7A5E; /* input borders: >=3:1 on ivory (line is decoration only) */
   --color-line2: #E0D4BF;
   --color-muted: #6E5F55;
   --font-sans: Jost, sans-serif;
@@ -23,7 +27,9 @@
 @layer base {
   body { @apply bg-paper text-ink font-sans antialiased; }
   button { @apply cursor-pointer; }
-  input, textarea { @apply outline-none; }
+  :focus-visible { outline: 2px solid var(--color-maroon); outline-offset: 2px; }
+  input:focus-visible, textarea:focus-visible { outline: none; } /* fields show a ring on their wrapper (focus-within) */
+  footer :focus-visible, .jaali :focus-visible { outline-color: var(--color-gold2); }
 }
 
 /* Mughal jaali lattice from the brand guide, used as ground for maroon panels. */

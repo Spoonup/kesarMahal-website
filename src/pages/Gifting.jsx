@@ -2,11 +2,13 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useStore, useQuote } from '../store';
 import { BOXES, BOX_COLOURS, NOTE_MAX, boxProductOf, treasuresOf, fmt } from '../data';
+import { hasUnpriced } from '../components/Summary';
 import { Photo, Btn, Label, Eyebrow, H1, Lines, Line, Skeleton, ErrorBox, PX, cx } from '../components/ui';
+import usePageMeta from '../usePageMeta';
 
 const Step = ({ n, title, right, children }) => (
   <div className="flex flex-col gap-3.5">
-    <div className="flex items-baseline justify-between"><Label className="text-gold">{n} · {title}</Label>{right}</div>
+    <div className="flex items-baseline justify-between"><Label className="text-goldtext">{n} · {title}</Label>{right}</div>
     {children}
   </div>
 );
@@ -14,6 +16,7 @@ const opt = on => cx('flex flex-col gap-1.5 border bg-ivory p-3 text-left sm:p-[
 const sizesOf = p => p.sizes.filter(z => z.price > 0);
 
 export default function Gifting() {
+  usePageMeta('Build a gift box', 'Choose a Kesar Mahal gift box, fill it with Kashmiri treasures and add a note.');
   const { catalogue, loadCatalogue, addGift } = useStore();
   const [tierKey, setTierKey] = useState('Chinar');
   const [picks, setPicks] = useState([]);          // product ids, in order chosen
@@ -39,7 +42,7 @@ export default function Gifting() {
   const items = ready ? [{ p: box.item, size: box.item.sizes[0] }, ...chosen.map(p => ({ p, size: sizeFor(p) }))] : [];
   const wouldBe = useMemo(() => items.map(({ p, size }) => ({ productId: p.id, sizeId: size.id, qty: 1 })), [items.map(i => i.p.id + i.size.id).join()]); // eslint-disable-line react-hooks/exhaustive-deps
   const { status, quote } = useQuote(undefined, undefined, wouldBe);
-  const q = quote?.lines.length === items.length ? quote : null;
+  const q = quote?.lines.length === items.length && !hasUnpriced(quote) ? quote : null;
 
   const toggle = id => setPicks(cur => {
     const c = cur.slice(0, box.n);
@@ -55,7 +58,7 @@ export default function Gifting() {
   return (
     <div className="grid items-start lg:grid-cols-[minmax(0,1fr)_400px]">
       <div className={cx('flex flex-col gap-10 py-12 lg:pr-12', PX)}>
-        <div className="flex flex-col gap-2.5"><Eyebrow className="text-crocus">Build a gift box</Eyebrow><H1 className="text-[clamp(36px,4.4vw,54px)]">Packed the way it would be in Srinagar</H1></div>
+        <div className="flex flex-col gap-2.5"><Eyebrow className="text-crocus">Build a gift box</Eyebrow><H1 className="text-[clamp(36px,4.4vw,54px)]">Fill a gift box with Kashmiri treasures</H1></div>
         {catalogue.status === 'loading' ? <Skeleton n={3} className="" /> : catalogue.status === 'error' ? <ErrorBox retry={loadCatalogue}>{catalogue.error || 'Could not load the pantry.'}</ErrorBox> : <>
           <Step n="I" title="Choose a box">
             <div className="grid grid-cols-3 gap-2.5 sm:gap-3.5">{boxes.map(b => b.item ? (
@@ -63,7 +66,7 @@ export default function Gifting() {
                 <b className="font-display text-2xl font-medium text-maroon">{b.key}</b><span className="text-[13px] text-muted">{b.n} treasures</span><span className="mt-1.5 text-sm font-medium">Box {fmt(b.item.sizes[0].price)}</span>
               </button>) : (
               <div key={b.key} aria-disabled="true" className={cx(opt(false), 'jaali-light border-dashed opacity-80')}>
-                <b className="font-display text-2xl font-medium text-maroon">{b.key}</b><span className="text-[13px] text-muted">{b.n} treasures</span><Label className="mt-1.5 text-gold">Unavailable</Label>
+                <b className="font-display text-2xl font-medium text-maroon">{b.key}</b><span className="text-[13px] text-muted">{b.n} treasures</span><Label className="mt-1.5 text-goldtext">Unavailable</Label>
               </div>))}
             </div>
             {!boxes.some(b => b.item) && <p className="text-[13px] text-muted">Gift boxes are not on sale yet, so a box cannot be added to the bag. For a custom gift, <Link to="/contact" className="border-b border-maroon text-maroon">contact us</Link>.</p>}
@@ -95,14 +98,14 @@ export default function Gifting() {
             </Step>
             <Step n="IV" title="Your note" right={<span className="text-[12px] text-muted">{note.length}/{NOTE_MAX}</span>}>
               <textarea value={note} onChange={e => setNote(e.target.value)} maxLength={NOTE_MAX} aria-label="Gift note" placeholder="Eid Mubarak, Ammi. From the valley, with love."
-                className="h-[86px] resize-none border border-line bg-ivory p-3.5 font-display text-[19px] italic leading-[1.4] text-maroon focus:border-maroon" />
+                className="h-[86px] resize-none border border-line bg-ivory p-3.5 font-display text-[19px] italic leading-[1.4] text-maroon focus:border-maroon focus:ring-2 focus:ring-maroon" />
             </Step>
           </div>
         </>}
         <p className="text-[14px] font-light">Need a custom gift or bulk order? <Link to="/contact" className="border-b border-maroon text-maroon">Contact us</Link></p>
       </div>
       <aside className="flex flex-col gap-5 border-t border-line bg-ivory px-6 py-10 lg:sticky lg:top-0 lg:self-start lg:border-l lg:border-t-0 lg:px-8" aria-busy={status === 'loading'}>
-        <Label className="text-gold">Your box</Label>
+        <Label className="text-goldtext">Your box</Label>
         <div className="jaali p-[18px]" style={{ backgroundColor: colour.hex }}>
           <div className="grid grid-cols-3 gap-2">
             {Array.from({ length: box.n }, (_, i) => (

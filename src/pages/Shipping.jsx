@@ -1,10 +1,12 @@
 import { Link } from 'react-router-dom';
 import { Prose } from '../components/ui';
 import { TBC } from '../contact';
+import usePageMeta from '../usePageMeta';
 
 export default function Shipping() {
+  usePageMeta('Shipping & delivery', 'Where Kesar Mahal delivers, delivery charges and how to follow an order.');
   return (
-    <Prose title="Shipping & delivery" intro="Everything in the Pantry ships across India, packed and sealed in Srinagar.">
+    <Prose title="Shipping & delivery" intro="Everything in the Pantry ships across India.">
       <h2>Where we deliver</h2>
       <p>Pantry products (saffron, dry fruits, kahwa) are delivered anywhere in India.</p>
       <h2>Delivery charge</h2>

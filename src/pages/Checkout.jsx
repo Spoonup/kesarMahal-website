@@ -4,8 +4,9 @@ import { useStore, useQuote } from '../store';
 import { api, friendly, rememberOrder } from '../api';
 import { fmt, giftNotes } from '../data';
 import { Wordmark } from '../components/Chrome';
-import { Totals, payable } from '../components/Summary';
+import { Totals, payable, hasUnpriced, UNPRICED_MSG } from '../components/Summary';
 import { Field, Btn, Label, H2, ErrorBox, PX, cx } from '../components/ui';
+import usePageMeta from '../usePageMeta';
 
 const Sec = ({ title, right, children }) => (
   <section className="flex flex-col gap-3.5">
@@ -37,7 +38,21 @@ const payWithRazorpay = (prepared, prefill) => new Promise((resolve, reject) => 
   }).catch(reject);
 });
 
+const FIELDS = ['name', 'phone', 'email', 'line1', 'city', 'pincode'];
+const validate = f => {
+  const e = {};
+  if (f.name.trim().length < 2) e.name = 'Enter your full name (at least 2 letters).';
+  if (!/^\d{10}$/.test(f.phone)) e.phone = 'Enter a 10-digit mobile number.';
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.trim())) e.email = 'Enter a valid email address, like name@example.com.';
+  if (f.line1.trim().length < 5) e.line1 = 'Enter your address (at least 5 characters).';
+  if (f.city.trim().length < 2) e.city = 'Enter your city.';
+  if (!/^\d{6}$/.test(f.pincode)) e.pincode = 'Enter a 6-digit PIN code.';
+  return e;
+};
+const LABELS = { name: 'Full name', phone: 'Mobile', email: 'Email', line1: 'Address', city: 'City', pincode: 'PIN code' };
+
 export default function Checkout() {
+  usePageMeta('Checkout');
   const { lines, gifts, user, settings, byId, clear } = useStore();
   const nav = useNavigate();
   const [f, setF] = useState({ name: '', phone: '', email: '', line1: '', landmark: '', city: '', pincode: '' });
@@ -47,6 +62,7 @@ export default function Checkout() {
   const [couponMsg, setCouponMsg] = useState('');
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
+  const [tried, setTried] = useState(false); // after the first submit attempt, errors show live as the customer fixes them
   const lock = useRef(false);
   const { status, quote, error } = useQuote(coupon, f.phone.length === 10 ? f.phone : undefined);
 
@@ -68,8 +84,11 @@ export default function Checkout() {
     setF(s => (onlyEmpty && s.line1 ? s : { ...s, line1: [a.line1, a.line2].filter(Boolean).join(', '), landmark: a.landmark || '', city: a.city || '', pincode: a.pincode || '' }));
   }
 
+  const errors = tried ? validate(f) : {};
+  const errList = FIELDS.filter(k => errors[k]);
   const online = Boolean(settings?.razorpayEnabled && settings?.razorpayKeyId);
   const total = quote ? payable(quote) : 0;
+  const blocked = hasUnpriced(quote);
 
   const applyCoupon = async () => {
     const c = code.trim();
@@ -84,7 +103,9 @@ export default function Checkout() {
 
   const submit = async e => {
     e.preventDefault();
-    if (lock.current || !quote) return;
+    if (lock.current || !quote || blocked) return;
+    const bad = FIELDS.filter(k => validate(f)[k]);
+    if (bad.length) { setTried(true); document.getElementById(`co-${bad[0]}`)?.focus(); return; }
     lock.current = true; setBusy(true); setErr('');
     let checkoutId = '';
     try {
@@ -103,7 +124,7 @@ export default function Checkout() {
       const proof = online ? await payWithRazorpay(prepared, { name: f.name, contact: f.phone, email: f.email }) : {};
       const done = await api.complete({ checkoutId, checkoutToken: prepared.checkoutToken, ...proof });
       const order = done.order || done.orders?.[0];
-      if (!order) throw new Error('Your order was placed but could not be shown. Check your email for confirmation.');
+      if (!order) throw new Error('Your order was placed but could not be shown. Check My orders in your account, or contact us with your phone number.');
       rememberOrder(order, done.parentOrder);
       clear();
       nav(`/confirmed/${order.id}`, { replace: true });
@@ -115,15 +136,21 @@ export default function Checkout() {
   };
 
   return (
-    <form onSubmit={submit}>
+    <form onSubmit={submit} noValidate id="checkout-form" className="pb-24 lg:pb-0">
       <div className={cx('flex items-center justify-between border-b border-line bg-ivory py-5', PX)}><Wordmark size={24} className="items-start" /><span className="text-[13px] text-muted">Secure checkout</span></div>
       <div className="grid items-start lg:grid-cols-[minmax(0,1fr)_420px]">
         <div className={cx('flex flex-col gap-8 pb-16 pt-11', PX)}>
+          {errList.length > 0 && (
+            <div role="alert" className="border border-kesar bg-ivory p-4 text-[14.5px] text-kesar">
+              <p className="font-medium">Please fix {errList.length === 1 ? 'this field' : `these ${errList.length} fields`} to continue:</p>
+              <ul className="mt-1.5 list-disc pl-5">{errList.map(k => <li key={k}><a href={`#co-${k}`} className="underline" onClick={e => { e.preventDefault(); document.getElementById(`co-${k}`)?.focus(); }}>{LABELS[k]}</a>: {errors[k]}</li>)}</ul>
+            </div>
+          )}
           <Sec title="I · Contact" right={!user && <span className="text-[13.5px]">Have an account? <Link to="/signin?next=/checkout" className="border-b border-maroon text-maroon">Sign in</Link></span>}>
-            <Field label="Full name" required minLength={2} maxLength={60} autoComplete="name" value={f.name} onChange={set('name')} />
+            <Field id="co-name" error={errors.name} label="Full name" required minLength={2} maxLength={60} autoComplete="name" value={f.name} onChange={set('name')} />
             <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Mobile (10 digits)" required inputMode="numeric" autoComplete="tel-national" pattern="[0-9]{10}" maxLength={10} title="10-digit mobile number" value={f.phone} onChange={e => setF(s => ({ ...s, phone: e.target.value.replace(/\D/g, '') }))} placeholder="98765 43210" />
-              <Field label="Email" type="email" required autoComplete="email" value={f.email} onChange={set('email')} />
+              <Field id="co-phone" error={errors.phone} label="Mobile (10 digits)" required inputMode="numeric" autoComplete="tel-national" pattern="[0-9]{10}" maxLength={10} title="10-digit mobile number" value={f.phone} onChange={e => setF(s => ({ ...s, phone: e.target.value.replace(/\D/g, '') }))} placeholder="98765 43210" />
+              <Field id="co-email" error={errors.email} label="Email" type="email" required autoComplete="email" value={f.email} onChange={set('email')} />
             </div>
           </Sec>
           <Sec title="II · Deliver to">
@@ -132,11 +159,11 @@ export default function Checkout() {
                 {saved.map(a => <button type="button" key={a.id} onClick={() => fillAddress(a)} className="rounded-full border border-maroon px-4 py-2 text-[13px] text-maroon">{a.label}</button>)}
               </div>
             )}
-            <Field label="Address" required minLength={5} maxLength={120} autoComplete="address-line1" value={f.line1} onChange={set('line1')} />
+            <Field id="co-line1" error={errors.line1} label="Address" required minLength={5} maxLength={120} autoComplete="address-line1" value={f.line1} onChange={set('line1')} />
             <Field label="Landmark (optional)" maxLength={80} value={f.landmark} onChange={set('landmark')} />
             <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="City" required minLength={2} autoComplete="address-level2" value={f.city} onChange={set('city')} />
-              <Field label="PIN code" required inputMode="numeric" autoComplete="postal-code" pattern="[0-9]{6}" maxLength={6} title="6-digit pincode" value={f.pincode} onChange={e => setF(s => ({ ...s, pincode: e.target.value.replace(/\D/g, '') }))} />
+              <Field id="co-city" error={errors.city} label="City" required minLength={2} autoComplete="address-level2" value={f.city} onChange={set('city')} />
+              <Field id="co-pincode" error={errors.pincode} label="PIN code" required inputMode="numeric" autoComplete="postal-code" pattern="[0-9]{6}" maxLength={6} title="6-digit pincode" value={f.pincode} onChange={e => setF(s => ({ ...s, pincode: e.target.value.replace(/\D/g, '') }))} />
             </div>
             <p className="text-[13px] font-light text-muted">We ship the pantry range anywhere in India.</p>
           </Sec>
@@ -148,7 +175,7 @@ export default function Checkout() {
           </Sec>
         </div>
         <aside className="flex flex-col gap-4 self-stretch border-t border-line bg-ivory px-6 py-11 text-[14.5px] lg:border-l lg:border-t-0 lg:px-8" aria-busy={status === 'loading'}>
-          <Label className="text-gold">Order · {lines.length} item{lines.length > 1 ? 's' : ''}</Label>
+          <Label className="text-goldtext">Order · {lines.length} item{lines.length > 1 ? 's' : ''}</Label>
           {error && <ErrorBox>{friendly(error)} <Link to="/bag" className="underline">Back to bag</Link></ErrorBox>}
           {quote && (
             <div className="flex flex-col gap-2">
@@ -158,7 +185,7 @@ export default function Checkout() {
             </div>
           )}
           <div>
-            <div className="flex border border-line focus-within:border-maroon">
+            <div className="flex border border-field focus-within:border-maroon focus-within:ring-2 focus-within:ring-maroon">
               <input aria-label="Coupon code" value={code} onChange={e => setCode(e.target.value.toUpperCase())} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); applyCoupon(); } }} placeholder="Coupon code" className="w-full bg-transparent px-3.5 py-2.5 text-[15px]" disabled={Boolean(coupon)} />
               {coupon ? <button type="button" className="px-4 text-[13px] text-maroon" onClick={() => { setCoupon(null); setCode(''); }}>REMOVE</button> : <button type="button" className="px-4 text-[13px] text-maroon" onClick={applyCoupon}>APPLY</button>}
             </div>
@@ -166,10 +193,15 @@ export default function Checkout() {
             {quote?.coupon && !quote.coupon.valid && <p role="alert" className="mt-1.5 text-[13px] text-kesar">{quote.coupon.message || friendly({ code: quote.coupon.reason })}</p>}
           </div>
           {quote ? <Totals quote={quote} /> : <span className="font-light text-muted">{status === 'loading' ? 'Pricing your order…' : 'Totals unavailable.'}</span>}
+          {blocked && <ErrorBox>{UNPRICED_MSG} <Link to="/bag" className="underline">Back to bag</Link></ErrorBox>}
           {err && <ErrorBox>{err}</ErrorBox>}
-          <Btn disabled={busy || !quote || settings === null} aria-busy={busy}>{busy ? 'PLACING ORDER…' : online ? `PAY ${fmt(total)}` : `PLACE ORDER · ${fmt(total)}`}</Btn>
-          <span className="text-center text-[12.5px] text-muted">GST is included in the total above.</span>
+          <Btn disabled={busy || !quote || blocked || settings === null} aria-busy={busy}>{busy ? 'PLACING ORDER…' : online ? `PAY ${fmt(total)}` : `PLACE ORDER · ${fmt(total)}`}</Btn>
+          {quote && <span className="text-center text-[13.5px] text-muted">Total includes GST of {fmt(quote.totals.taxTotal)}.</span>}
         </aside>
+      </div>
+      <div className="fixed inset-x-0 bottom-0 z-30 flex items-center gap-4 border-t border-line bg-ivory px-5 py-3 lg:hidden">
+        <div className="flex flex-col leading-tight"><span className="text-[12px] text-muted">Total</span><span className="font-display text-[22px] font-medium">{quote ? fmt(total) : '…'}</span></div>
+        <Btn className="flex-1" disabled={busy || !quote || blocked || settings === null} aria-busy={busy}>{busy ? 'PLACING ORDER…' : online ? 'PAY NOW' : 'PLACE ORDER'}</Btn>
       </div>
     </form>
   );

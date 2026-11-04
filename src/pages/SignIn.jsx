@@ -3,17 +3,19 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useStore } from '../store';
 import { api, friendly } from '../api';
 import { Btn, H1, Arch, ErrorBox, GoogleBtn } from '../components/ui';
+import usePageMeta from '../usePageMeta';
+import { safeNext as clean } from '../safeNext';
 
 const Field = ({ label, ...p }) => (
-  <label className="flex flex-col border border-line bg-ivory px-4 py-3 focus-within:border-maroon"><span className="text-[11.5px] text-muted">{label}</span><input className="mt-0.5 w-full bg-transparent text-[17px]" {...p} /></label>
+  <label className="flex flex-col border border-field bg-ivory px-4 py-3 focus-within:border-maroon focus-within:ring-2 focus-within:ring-maroon"><span className="text-[11.5px] text-muted">{label}</span><input className="mt-0.5 w-full bg-transparent text-[17px]" {...p} /></label>
 );
 
 export default function SignIn() {
+  usePageMeta('Sign in');
   const { signIn, settings } = useStore();
   const nav = useNavigate();
   const [params] = useSearchParams();
-  const next = params.get('next');
-  const safeNext = next && next.startsWith('/') && !next.startsWith('//') ? next : '';
+  const safeNext = clean(params.get('next'));
   const [mode, setMode] = useState('login');
   const [f, setF] = useState({ username: '', password: '', email: '', phone: '' });
   const [err, setErr] = useState('');
@@ -43,7 +45,7 @@ export default function SignIn() {
         <Link to="/" className="font-cinzel text-2xl font-medium text-maroon">Kesar Mahal</Link>
         <H1 className="text-[clamp(36px,4.4vw,50px)] leading-[1.04]">{signup ? 'Join the house.' : 'Welcome back to the house.'}</H1>
         <p className="text-[15px] font-light leading-[1.6]">Your orders and saved addresses, in one place. You can also check out as a guest.</p>
-        {!signup && <p className="text-[14px] font-light text-muted">Already shop with SpoonUp? Sign in with the same account here.</p>}
+        {!signup && <p className="text-[14px] font-light text-muted">Already have an account? Sign in with the same details here.</p>}
         <GoogleBtn onClick={google} />
         <div className="flex items-center gap-4 text-[11px] uppercase tracking-[0.2em] text-muted"><span className="h-px flex-1 bg-line" />or use your account<span className="h-px flex-1 bg-line" /></div>
         <Field label={signup ? 'Username (3-32 letters, numbers, underscores)' : 'Username or email'} required autoComplete="username" value={f.username} onChange={set('username')} />

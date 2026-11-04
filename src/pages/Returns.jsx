@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom';
 import { Prose } from '../components/ui';
 import { TBC } from '../contact';
+import usePageMeta from '../usePageMeta';
 
 export default function Returns() {
+  usePageMeta('Returns & refunds', 'How returns, complaints and refunds work at Kesar Mahal.');
   return (
     <Prose title="Returns & refunds" intro="If something is not right with your order, tell us and we will make it right.">
       <h2>Damaged, wrong or unsatisfactory items</h2>

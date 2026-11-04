@@ -1,10 +1,12 @@
 import { useStore, useQuote } from '../store';
 import { fmt, bagKey, BOXES } from '../data';
 import { Photo, Badge, Qty, Btn, Label, H1, ErrorBox, TextBtn, PX, cx } from '../components/ui';
-import { Totals } from '../components/Summary';
+import { Totals, hasUnpriced, UNPRICED_MSG } from '../components/Summary';
 import { friendly } from '../api';
+import usePageMeta from '../usePageMeta';
 
 export default function Bag() {
+  usePageMeta('Your bag');
   const { lines, gifts, setQty, remove, removeGift, byId, catalogue } = useStore();
   const { status, quote, error } = useQuote();
   if (!lines.length) return (
@@ -14,11 +16,13 @@ export default function Bag() {
   const pricedAt = quote?.lines.length === lines.length ? quote.lines : [];
   const priced = new Map(lines.map((l, i) => [bagKey(l), pricedAt[i]]));
   const seen = new Set();
+  const blocked = hasUnpriced(quote);
   return (
     <div className={cx('grid items-start gap-12 pb-[72px] pt-12 lg:grid-cols-[minmax(0,1fr)_400px]', PX)}>
       <div className="flex flex-col gap-6">
         <H1 className="text-[clamp(38px,4.4vw,54px)]">Your bag</H1>
         {error && <ErrorBox>{friendly(error)}</ErrorBox>}
+        {blocked && <ErrorBox>{UNPRICED_MSG}</ErrorBox>}
         <div className="border-t border-line">
           {lines.map(l => {
             if (l.gift) {
@@ -49,7 +53,7 @@ export default function Bag() {
               <div key={key} className="grid grid-cols-[80px_1fr_auto] items-center gap-x-3.5 gap-y-2 border-b border-line py-[22px] sm:grid-cols-[120px_minmax(0,1fr)_auto_auto] sm:gap-6">
                 <div className="aspect-square overflow-hidden"><Photo src={p?.img} label={p?.name || ''} /></div>
                 <div>{p && <Badge color={p.color}>{p.category}</Badge>}<div className="mt-2 font-display text-[25px] font-medium text-maroon">{p?.name || l.productId}</div>
-                  <div className="text-[13px] text-muted">{[label, q && `${fmt(q.unitPrice)} each`].filter(Boolean).join(' · ')}</div>
+                  <div className="text-[13px] text-muted">{[label, q && (q.baseAmount > 0 ? `${fmt(q.unitPrice)} each` : 'No price set')].filter(Boolean).join(' · ')}</div>
                   <TextBtn className="mt-1 text-[13px] text-muted" onClick={() => remove(key)}>Remove</TextBtn></div>
                 <Qty value={l.qty} set={n => setQty(key, n)} />
                 <span className="col-start-3 min-w-20 text-right text-[17px] font-medium sm:col-start-auto">{q ? fmt(q.baseAmount) : '…'}</span>
@@ -59,9 +63,9 @@ export default function Bag() {
         </div>
       </div>
       <aside className="flex flex-col gap-3.5 border border-line bg-ivory p-7 text-[14.5px] lg:mt-[78px]" aria-busy={status === 'loading'}>
-        <Label className="text-gold">Summary</Label>
+        <Label className="text-goldtext">Summary</Label>
         {quote ? <Totals quote={quote} /> : <span className="font-light text-muted">{status === 'loading' ? 'Pricing your bag…' : 'Totals unavailable.'}</span>}
-        {quote && catalogue.status === 'ready' ? <Btn to="/checkout" className="mt-1.5">CHECK OUT</Btn> : <Btn disabled className="mt-1.5">CHECK OUT</Btn>}
+        {quote && catalogue.status === 'ready' && !blocked ? <Btn to="/checkout" className="mt-1.5">CHECK OUT</Btn> : <Btn disabled className="mt-1.5">CHECK OUT</Btn>}
         <span className="text-center text-[12.5px] text-muted">Prices exclude GST, which is added above. Ships across India.</span>
       </aside>
     </div>

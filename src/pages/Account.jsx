@@ -2,21 +2,22 @@ import { useEffect, useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useStore } from '../store';
 import { api, friendly } from '../api';
-import { fmt } from '../data';
-import { LotTrace } from './Home';
+import { fmt, statusInfo } from '../data';
 import { Btn, Field, Label, H2, TextBtn, ErrorBox, PX, cx } from '../components/ui';
+import usePageMeta from '../usePageMeta';
 
 const navItem = 'px-3.5 py-2.5 text-left';
 const blank = { label: 'Home', line1: '', city: '', pincode: '' };
 
 export default function Account() {
+  usePageMeta('Your account');
   const { user, authReady, signOut, add, byId } = useStore();
   const nav = useNavigate();
   const [orders, setOrders] = useState({ status: 'loading', rows: [], error: '' });
   const [addrs, setAddrs] = useState([]);
   const [form, setForm] = useState(null);
   const [err, setErr] = useState('');
-  const loadOrders = () => { setOrders(o => ({ ...o, status: 'loading' })); api.myOrders().then(rows => setOrders({ status: 'ready', rows, error: '' })).catch(e => setOrders({ status: 'error', rows: [], error: friendly(e) })); };
+  const loadOrders = () => { setOrders(o => ({ ...o, status: 'loading' })); api.myOrders().then(all => { const tagged = all.some(o => o.storefront); setOrders({ status: 'ready', rows: tagged ? all.filter(o => o.storefront === 'kesarmahal') : all, mixed: !tagged, error: '' }); }).catch(e => setOrders({ status: 'error', rows: [], error: friendly(e) })); };
   useEffect(() => { if (user) { loadOrders(); api.addresses().then(setAddrs).catch(() => {}); } }, [user]);
   if (!authReady) return <p className={cx('py-20', PX)} aria-busy="true">Loading…</p>;
   if (!user) return <Navigate to="/signin" replace />;
@@ -26,7 +27,7 @@ export default function Account() {
     try { const a = await api.addAddress({ ...form, line1: form.line1.trim(), city: form.city.trim() }); setAddrs(r => [...r, a]); setForm(null); } catch (ex) { setErr(friendly(ex)); }
   };
   const drop = async id => { try { await api.deleteAddress(id); setAddrs(r => r.filter(a => a.id !== id)); } catch (ex) { setErr(friendly(ex)); } };
-  const { rows, status } = orders;
+  const { rows, status, mixed } = orders;
   return (
     <div className={cx('grid gap-12 pb-[72px] pt-12 md:grid-cols-[240px_minmax(0,1fr)]', PX)}>
       <aside className="flex flex-col text-[15px]">
@@ -36,14 +37,15 @@ export default function Account() {
       </aside>
       <div className="flex flex-col gap-9">
         <div>
-          <Label className="mb-2.5 block text-gold">Your orders</Label>
+          <Label className="mb-2.5 block text-goldtext">Your orders</Label>
           {status === 'loading' && <p aria-busy="true" className="text-muted">Loading orders…</p>}
           {status === 'error' && <ErrorBox retry={loadOrders}>{orders.error}</ErrorBox>}
+          {status === 'ready' && mixed && rows.length > 0 && <p className="mb-2 text-[13px] text-muted">This list may also include orders placed on the SpoonUp site with the same account.</p>}
           {status === 'ready' && !rows.length && <div className="flex flex-col items-start gap-4"><H2>No orders yet.</H2><Btn to="/shop">SHOP THE HARVEST</Btn></div>}
           {rows.map(o => (
             <div key={o.id} className="grid grid-cols-[1fr_auto] items-center gap-x-5 gap-y-1 border-t border-line py-[18px] text-[14.5px] md:grid-cols-[110px_minmax(0,1fr)_110px_auto_auto]">
               <span className="font-mono text-[13px] font-medium">#{o.orderNumber}</span>
-              <span className="order-last col-span-2 font-light md:order-none md:col-span-1">{o.items.map(i => `${i.name} × ${i.quantity}`).join(' · ')} <em className="text-muted">({String(o.status).replace(/_/g, ' ')})</em></span>
+              <span className="order-last col-span-2 font-light md:order-none md:col-span-1">{o.items.map(i => `${i.name} × ${i.quantity}`).join(' · ')} <em className="text-muted">({statusInfo(o).label})</em></span>
               <span>{fmt(o.totalAmount)}</span>
               <button className="border-b border-maroon text-[13px] text-maroon" onClick={() => reorder(o)}>Reorder</button>
               <Link className="border-b border-maroon text-[13px] text-maroon" to={`/confirmed/${o.id}`}>View</Link>
@@ -51,7 +53,7 @@ export default function Account() {
           ))}
         </div>
         <div>
-          <div className="mb-2.5 flex items-center justify-between"><Label className="text-gold">Saved addresses</Label>{!form && <button className="border-b border-maroon text-[13px] text-maroon" onClick={() => setForm(blank)}>Add address</button>}</div>
+          <div className="mb-2.5 flex items-center justify-between"><Label className="text-goldtext">Saved addresses</Label>{!form && <button className="border-b border-maroon text-[13px] text-maroon" onClick={() => setForm(blank)}>Add address</button>}</div>
           {err && <ErrorBox className="mb-3">{err}</ErrorBox>}
           {addrs.map(a => <div key={a.id} className="flex items-start justify-between gap-4 border-t border-line py-3.5 text-[14.5px]"><span><b className="font-medium">{a.label}</b>{a.isDefault && ' (default)'}<br /><span className="font-light">{[a.line1, a.line2, a.city, a.pincode].filter(Boolean).join(', ')}</span></span><button className="text-[13px] text-muted" onClick={() => drop(a.id)}>Delete</button></div>)}
           {!addrs.length && !form && <p className="font-light text-muted">No saved addresses yet.</p>}
@@ -63,10 +65,6 @@ export default function Account() {
               <div className="flex gap-3"><Btn sm>SAVE</Btn><Btn sm ghost type="button" onClick={() => { setForm(null); setErr(''); }}>CANCEL</Btn></div>
             </form>
           )}
-        </div>
-        <div className="jaali grid items-center gap-6 p-7 text-ivory md:grid-cols-2">
-          <div className="bg-maroon p-0.5"><span className="font-display text-[28px] font-medium">Trace a lot</span><p className="mt-1.5 text-sm font-light text-[#EADFD0]">Find the code on the back of any pack.</p></div>
-          <div className="bg-maroon p-0.5"><LotTrace /></div>
         </div>
       </div>
     </div>

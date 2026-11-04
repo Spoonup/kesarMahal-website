@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { Btn, Field, Prose } from '../components/ui';
 import { CONTACT, mailto } from '../contact';
+import usePageMeta from '../usePageMeta';
 
 export default function Contact() {
+  usePageMeta('Contact', 'Get in touch with Kesar Mahal about an order or a gift.');
   const [f, setF] = useState({ name: '', email: '', phone: '', order: '', message: '' });
   const set = k => e => setF(s => ({ ...s, [k]: e.target.value }));
   const body = `${f.message}\n\nName: ${f.name}\nEmail: ${f.email}\nPhone: ${f.phone || '-'}\nOrder number: ${f.order || '-'}`;

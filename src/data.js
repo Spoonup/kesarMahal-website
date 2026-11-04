@@ -29,15 +29,20 @@ export const categoriesOf = list => SHELVES.filter(s => list.some(p => p.room ==
 // Gifting page: live products suited to gifting, in display order. Matched by exact live name; a name that is
 // not in the live catalogue, is sold out, or has no price (e.g. unseeded local test data) is skipped. No prices here: they always come from the API.
 export const GIFTING = ['Kashmiri Mongra Saffron (Pure)', 'Kashmiri Mamra Almonds', 'Kashmiri Walnut Kernels', 'Mixed Dry Fruits', 'Roasted Fruit & Nut', 'Dried Fig (Anjeer)', 'Saffron Honey', 'Kashmiri Gulkand'];
-export const giftsOf = live => GIFTING.map(n => live.find(p => p.name === n && p.available && p.sizes.every(z => z.price > 0))).filter(Boolean);
 
-// Server product -> what the UI uses. `sizes` is always non-empty; an unsized product gets one price-only entry.
+// A price the shop may sell at: a finite number above zero. Null/0 prices come from unfinished admin data.
+export const validPrice = n => Number.isFinite(Number(n)) && Number(n) > 0;
+
+// Server product -> what the UI uses. Sizes (or the single price of an unsized product) with no valid price are dropped, so they can
+// never be picked, bagged or checked out. A product left with no valid price is `unpriced` and never available.
+// `sizes` is empty only for an unpriced product; otherwise an unsized product gets one price-only entry.
 export const adapt = p => {
-  const sized = p.sizes?.length;
+  const sized = p.sizes?.length > 0;
+  const all = sized ? p.sizes.map(s => ({ id: s.id, label: s.label, price: Number(s.price) })) : [{ id: undefined, label: '', price: Number(p.price) }];
+  const sizes = all.filter(z => validPrice(z.price));
   return {
     id: p.id, name: p.name, category: p.category || 'Pantry', room: shelfOf(p.category), desc: p.description || '', img: p.imageUrl || '',
-    available: p.isAvailable !== false, color: categoryColor(shelfOf(p.category)), sized,
-    sizes: sized ? p.sizes.map(s => ({ id: s.id, label: s.label, price: Number(s.price) })) : [{ id: undefined, label: '', price: Number(p.price) }]
+    available: p.isAvailable !== false && sizes.length > 0, unpriced: sizes.length === 0, color: categoryColor(shelfOf(p.category)), sized, sizes
   };
 };
 
@@ -86,3 +91,39 @@ export const grades = [
 ];
 // Only lot in the mockup; replace with an API lookup.
 export const lots = { 'KM-PMP-2611': { product: 'Mongra Kesar', picked: '12 Oct 2026', grower: 'Bhat family, Pampore' } };
+
+// Honest wording for a backend order status (Pantry flow: pending, sourcing, packed, shipped, delivered, cancelled,
+// rejected, returned, refunded; plus the older immediate-order words). `step` is the position on the journey strip, or -1
+// when the order ended without delivery (no strip). `ended` orders never claim packing or pay-on-delivery.
+export const journey = ['Placed', 'Packed', 'Shipped', 'At your door'];
+const STATUS = {
+  pending: { label: 'Received', step: 0, head: 'We have received your order.' },
+  confirmed: { label: 'Received', step: 0, head: 'We have received your order.' },
+  scheduled: { label: 'Received', step: 0, head: 'We have received your order.' },
+  sourcing: { label: 'Being sourced', step: 0, head: 'We are sourcing your order.' },
+  preparing: { label: 'Being prepared', step: 1, head: 'Your order is being prepared.' },
+  ready: { label: 'Ready', step: 1, head: 'Your order is ready.' },
+  packed: { label: 'Packed', step: 1, head: 'Your treasures are packed.' },
+  shipped: { label: 'Shipped', step: 2, head: 'Your order is on its way.' },
+  out_for_delivery: { label: 'Out for delivery', step: 2, head: 'Your order is out for delivery.' },
+  delivered: { label: 'Delivered', step: 3, head: 'Your order was delivered.' },
+  completed: { label: 'Completed', step: 3, head: 'Your order is complete.' },
+  failed_delivery: { label: 'Delivery failed', step: 2, head: 'We could not deliver this order.', ended: true },
+  cancelled: { label: 'Cancelled', step: -1, head: 'This order was cancelled.', ended: true },
+  rejected: { label: 'Not accepted', step: -1, head: 'We could not accept this order.', ended: true },
+  returned: { label: 'Returned', step: -1, head: 'This order was returned.', ended: true },
+  refunded: { label: 'Refunded', step: -1, head: 'This order was refunded.', ended: true }
+};
+export const statusInfo = order => {
+  const key = String(order?.status || '').toLowerCase();
+  const known = STATUS[key];
+  const info = known || { label: key.replace(/_/g, ' ') || 'Unknown', step: 0, head: 'Your order is with us.' };
+  const pay = String(order?.paymentStatus || '').toLowerCase(), online = String(order?.paymentMethod || '').toLowerCase() === 'online';
+  let payment = '';
+  if (pay === 'refunded') payment = 'Payment refunded.';
+  else if (pay === 'paid') payment = info.ended ? 'Payment was received. Please contact us about your refund.' : 'Payment received.';
+  else if (info.ended) payment = '';
+  else if (online) payment = 'Payment is pending confirmation. If money left your account, this page will update once it is confirmed; otherwise please contact us.';
+  else if (pay === 'unpaid') payment = 'Pay on delivery.';
+  return { ...info, payment, known: Boolean(known) };
+};

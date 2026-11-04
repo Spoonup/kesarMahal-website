@@ -79,7 +79,8 @@ export function StoreProvider({ children }) {
   const count = lines.reduce((a, l) => a + l.qty, 0);
 
   const signIn = ({ token, user: u }) => { setUserToken(token); setUser(u); setAuthReady(true); };
-  const signOut = () => { api.logout(); setUserToken(''); setUser(null); };
+  const signOut = () => { api.logout(); setUserToken(''); localStorage.removeItem('km_order_tokens'); localStorage.removeItem('km_order_meta'); setUser(null); };
+  useEffect(() => { const h = () => setUser(null); window.addEventListener('km:unauthorized', h); return () => window.removeEventListener('km:unauthorized', h); }, []);
 
   return (
     <Ctx.Provider value={{ lines, gifts, addGift, removeGift, add, setQty, remove, clear, count, catalogue, loadCatalogue, byId, settings, user, authReady, signIn, signOut, toast }}>

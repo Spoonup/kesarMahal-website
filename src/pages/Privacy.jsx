@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom';
 import { Prose } from '../components/ui';
 import { CONTACT } from '../contact';
+import usePageMeta from '../usePageMeta';
 
 export default function Privacy() {
+  usePageMeta('Privacy', 'How Kesar Mahal handles your information.');
   return (
     <Prose eyebrow="Legal" title="Privacy policy" intro="Draft for the owner to review before launch. [to confirm with legal advice]">
       <h2>What we collect</h2>

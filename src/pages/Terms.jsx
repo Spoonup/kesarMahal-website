@@ -1,7 +1,9 @@
 import { Link } from 'react-router-dom';
 import { Prose } from '../components/ui';
+import usePageMeta from '../usePageMeta';
 
 export default function Terms() {
+  usePageMeta('Terms', 'Terms of sale for Kesar Mahal.');
   return (
     <Prose eyebrow="Legal" title="Terms of sale" intro="Draft for the owner to review before launch. [to confirm with legal advice]">
       <h2>Orders and prices</h2>

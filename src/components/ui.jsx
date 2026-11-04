@@ -17,15 +17,16 @@ export function Btn({ to, ghost, sm, className, ...p }) {
 }
 
 export const Label = ({ className, ...p }) => <span className={cx('font-cinzel text-[11px] uppercase tracking-[.28em]', className)} {...p} />;
-export const Eyebrow = ({ className, ...p }) => <span className={cx('font-cinzel text-[11.5px] uppercase tracking-[.32em] text-gold', className)} {...p} />;
+export const Eyebrow = ({ className, ...p }) => <span className={cx('font-cinzel text-[11.5px] uppercase tracking-[.32em]', !/\btext-/.test(className || '') && 'text-goldtext', className)} {...p} />;
 export const H1 = ({ className, ...p }) => <h1 className={cx('font-display text-[clamp(40px,5vw,58px)] leading-none font-medium text-maroon', className)} {...p} />;
 export const H2 = ({ className, ...p }) => <h2 className={cx('font-display text-[clamp(30px,3.6vw,46px)] leading-[1.05] font-medium text-maroon', className)} {...p} />;
 export const ULink = ({ to, className, ...p }) => <Link to={to} className={cx('border-b border-maroon pb-1 text-[13px] tracking-[.14em] text-maroon', className)} {...p} />;
 export const TextBtn = ({ className, ...p }) => <button className={cx('hover:text-maroon', className)} {...p} />;
 export const Diamond = ({ color = '#6B1426', className }) => <i className={cx('inline-block size-[9px] rotate-45', className)} style={{ background: color }} />;
 
-export const Photo = ({ src, label, className, style }) =>
-  src ? <img className={cx('block size-full object-cover', className)} src={src} alt={label} style={style} loading="lazy" />
+// Product photos are lazy; width/height only reserve the ratio (CSS sizes them). `alt` defaults to the label.
+export const Photo = ({ src, label, alt = label, w = 800, h = 800, className, style }) =>
+  src ? <img className={cx('block size-full object-cover', className)} src={src} alt={alt} width={w} height={h} style={style} loading="lazy" decoding="async" />
       : <div className={cx('jaali-light flex size-full items-center justify-center p-3 text-center', className)} style={style}>
           <span className="border border-line bg-ivory px-3 py-1 font-display text-[22px] font-medium text-maroon">{label}</span>
         </div>;
@@ -55,7 +56,7 @@ export function SectionHead({ eyebrow, title, right }) {
 
 export function ProductCard({ p, ratio = 'aspect-square' }) {
   const { add } = useStore();
-  const sizes = p.sizes.filter(z => z.price > 0);
+  const sizes = p.sizes; // already only valid-priced sizes (see adapt)
   const [pick, setPick] = useState(0);
   const z = sizes[pick] || sizes[0];
   const to = `/product/${p.id}`;
@@ -64,7 +65,7 @@ export function ProductCard({ p, ratio = 'aspect-square' }) {
     <div className="group flex flex-col border border-line bg-ivory">
       <Link to={to} className={cx('relative block overflow-hidden', ratio)}>
         <Photo src={p.img} label={p.name} className="transition-transform duration-500 group-hover:scale-105" />
-        <Badge color={p.color} abs>{p.available ? p.category : 'Sold out'}</Badge>
+        <Badge color={p.color} abs>{p.available ? p.category : p.unpriced ? 'Unavailable' : 'Sold out'}</Badge>
       </Link>
       <div className="flex flex-1 flex-col px-5 pb-5 pt-[18px]">
         <Link to={to} className="font-display text-[25px] font-medium leading-[1.1] text-maroon decoration-gold decoration-1 underline-offset-4 hover:underline">{p.name}</Link>
@@ -81,10 +82,10 @@ export function ProductCard({ p, ratio = 'aspect-square' }) {
         <div className="mt-auto flex flex-col gap-3 pt-4">
           <div className="flex items-baseline justify-between gap-2">
             <span className="text-[19px] font-medium">{z ? fmt(z.price) : ''}{z?.label && <small className="text-[13px] font-light text-muted"> / {z.label}</small>}</span>
-            <Link to={to} className="font-cinzel text-[10px] uppercase tracking-[.22em] text-gold hover:text-maroon">View details</Link>
+            <Link to={to} className="font-cinzel text-[10px] uppercase tracking-[.22em] text-goldtext hover:text-maroon">View details</Link>
           </div>
           <button type="button" disabled={!ok} onClick={() => add(p, z)}
-            className="min-h-11 border border-maroon bg-maroon font-cinzel text-[12px] uppercase tracking-[.22em] text-ivory hover:bg-[#561020] disabled:cursor-not-allowed disabled:border-[#9C8C80] disabled:bg-[#9C8C80]">{ok ? 'Add to bag' : 'Sold out'}</button>
+            className="min-h-11 border border-maroon bg-maroon font-cinzel text-[12px] uppercase tracking-[.22em] text-ivory hover:bg-[#561020] disabled:cursor-not-allowed disabled:border-[#9C8C80] disabled:bg-[#9C8C80]">{ok ? 'Add to bag' : p.unpriced ? 'Unavailable' : 'Sold out'}</button>
         </div>
       </div>
     </div>
@@ -112,13 +113,16 @@ export const Qty = ({ value, set, big }) => (
   </div>
 );
 
-export const Field = ({ label, className, area, ...p }) => {
+export const Field = ({ label, className, area, error, id, ...p }) => {
   const C = area ? 'textarea' : 'input';
   return (
-    <label className={cx('flex flex-col gap-0.5 border border-line bg-ivory px-3.5 py-2.5 focus-within:border-maroon', className)}>
-      <span className="text-[11px] text-muted">{label}</span>
-      <C className="w-full bg-transparent py-0.5 text-[15px]" {...p} />
-    </label>
+    <div className="flex flex-col gap-1">
+      <label className={cx('flex flex-col gap-0.5 border bg-ivory px-3.5 py-2.5 focus-within:border-maroon focus-within:ring-2 focus-within:ring-maroon', error ? 'border-kesar' : 'border-field', className)}>
+        <span className="text-[11px] text-muted">{label}</span>
+        <C id={id} aria-invalid={error ? true : undefined} aria-describedby={error && id ? `${id}-err` : undefined} className="w-full bg-transparent py-0.5 text-[15px]" {...p} />
+      </label>
+      {error && <p id={id ? `${id}-err` : undefined} role="alert" className="text-[13px] text-kesar">{error}</p>}
+    </div>
   );
 };
 
@@ -164,8 +168,8 @@ export function ShelfTabs({ items, active, onPick, className }) {
         {items.map(({ label, count }) => {
           const on = label === active;
           return (
-            <button key={label} type="button" onClick={() => onPick(label)} aria-pressed={on} className={cx('group relative min-h-11 shrink-0 snap-center whitespace-nowrap px-2.5 font-cinzel text-[11.5px] uppercase tracking-[.14em] outline-none transition-colors first:pl-0 focus-visible:text-maroon focus-visible:ring-1 focus-visible:ring-gold', on ? 'text-maroon' : 'text-ink/60 hover:text-maroon')}>
-              {label}{count != null && <span className="ml-1.5 text-[10px] tracking-[.1em] text-ink/40">{count}</span>}
+            <button key={label} type="button" onClick={() => onPick(label)} aria-pressed={on} className={cx('group relative min-h-11 shrink-0 snap-center whitespace-nowrap px-2.5 font-cinzel text-[11.5px] uppercase tracking-[.14em] outline-none transition-colors first:pl-0 focus-visible:text-maroon focus-visible:ring-2 focus-visible:ring-maroon', on ? 'text-maroon' : 'text-ink/70 hover:text-maroon')}>
+              {label}{count != null && <span className="ml-1.5 text-[10px] tracking-[.1em] text-muted">{count}</span>}
               <span aria-hidden className={cx('absolute inset-x-2.5 bottom-0 h-0.5 origin-left bg-gold transition-transform duration-300 group-first:left-0', on ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100 group-focus-visible:scale-x-100')} />
             </button>
           );

@@ -3,9 +3,12 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useStore } from '../store';
 import { api, friendly } from '../api';
 import { ErrorBox } from '../components/ui';
+import usePageMeta from '../usePageMeta';
+import { safeNext } from '../safeNext';
 
 // Where the backend sends the browser after Google: swap the one-time code for a session.
 export default function GoogleCallback() {
+  usePageMeta('Signing in');
   const { signIn } = useStore();
   const nav = useNavigate();
   const [params] = useSearchParams();
@@ -17,7 +20,7 @@ export default function GoogleCallback() {
     if (!code || ran.current) return;
     ran.current = true;
     api.googleExchange(code)
-      .then(r => { signIn(r); nav(next && next.startsWith('/') && !next.startsWith('//') ? next : '/account', { replace: true }); })
+      .then(r => { signIn(r); nav(safeNext(next) || '/account', { replace: true }); })
       .catch(e => setErr(friendly(e)));
   }, [code, next, signIn, nav]);
   return (

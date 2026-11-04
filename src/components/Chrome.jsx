@@ -13,7 +13,7 @@ export const Wordmark = ({ size = 26, to = '/', className }) => (
 
 // Nav label: Cinzel caps with a gold thread that draws in on hover and stays on the current page.
 const NavLink = ({ on, className, children, ...p }) => (
-  <Link className={cx('group whitespace-nowrap font-cinzel text-[11px] uppercase tracking-[.12em] text-ink min-[1280px]:text-[11.5px] min-[1280px]:tracking-[.2em] hover:text-maroon', on && 'text-maroon', className)} {...p}>
+  <Link aria-current={on ? 'page' : undefined} className={cx('group whitespace-nowrap font-cinzel text-[11px] uppercase tracking-[.12em] text-ink min-[1280px]:text-[11.5px] min-[1280px]:tracking-[.2em] hover:text-maroon', on && 'text-maroon', className)} {...p}>
     <span className={cx('relative inline-block py-1 after:absolute after:inset-x-0 after:bottom-0 after:h-px after:origin-left after:bg-gold after:transition-transform after:duration-300 group-hover:after:scale-x-100', on ? 'after:scale-x-100' : 'after:scale-x-0')}>{children}</span>
   </Link>
 );
@@ -76,8 +76,8 @@ export function Footer() {
           <span className="font-cinzel text-2xl font-medium text-ivory">Kesar Mahal</span>
           <p className="max-w-[340px] text-[14.5px]">Letters from the valley: harvest news, recipes, first access to limited lots. Once a month.</p>
           {done ? <p className="text-gold2">Shukriya. Look out for the next letter.</p> : (
-            <form className="flex max-w-[380px] border-b border-gold" onSubmit={e => { e.preventDefault(); setDone(true); }}>
-              <input type="email" required placeholder="Your email" className="w-full bg-transparent py-3 text-ivory placeholder:text-[#8A7A6E]" />
+            <form className="flex max-w-[380px] border-b border-gold focus-within:ring-2 focus-within:ring-gold2" onSubmit={e => { e.preventDefault(); setDone(true); }}>
+              <input type="email" required placeholder="Your email" className="w-full bg-transparent py-3 text-ivory placeholder:text-[#A8998C]" />
               <button className="font-cinzel text-[11px] uppercase tracking-[.24em] text-gold2">Subscribe</button>
             </form>
           )}

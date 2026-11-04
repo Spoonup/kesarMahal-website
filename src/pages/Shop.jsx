@@ -2,8 +2,10 @@ import { useSearchParams } from 'react-router-dom';
 import { useStore } from '../store';
 import { roomsOf, resolveShelf, isBox } from '../data';
 import { ProductCard, Skeleton, ErrorBox, Btn, Eyebrow, ShelfTabs, H1, H2, PX, cx } from '../components/ui';
+import usePageMeta from '../usePageMeta';
 
 export default function Shop() {
+  usePageMeta('Shop the pantry', 'Browse Kashmiri saffron, dry fruits, honey and kahwa. Prices shown before GST.');
   const { catalogue, loadCatalogue } = useStore();
   const [params, setParams] = useSearchParams();
   const raw = params.get('category') || 'All';
@@ -20,7 +22,7 @@ export default function Shop() {
     <>
       <div className={cx('flex flex-col gap-4 pb-7 pt-12 sm:flex-row sm:items-end sm:justify-between', PX)}>
         <div className="flex flex-col gap-2.5"><Eyebrow>Shop · {catalogue.status === 'ready' ? `${items.filter(p => p.available).length} available now` : 'the pantry'}</Eyebrow><H1>{category === 'All' ? 'The whole pantry' : category}</H1></div>
-        <label className="flex w-full flex-col gap-0.5 border border-line bg-ivory px-3.5 py-2 focus-within:border-maroon sm:w-[320px]">
+        <label className="flex w-full flex-col gap-0.5 border border-line bg-ivory px-3.5 py-2 focus-within:border-maroon focus-within:ring-2 focus-within:ring-maroon sm:w-[320px]">
           <span className="text-[11px] text-muted">Search</span>
           <input type="search" value={q} onChange={e => update('q', e.target.value)} placeholder="Almonds, honey, muesli…" className="w-full bg-transparent py-0.5 text-[15px]" />
         </label>

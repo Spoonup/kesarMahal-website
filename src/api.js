@@ -13,6 +13,8 @@ export const rememberOrder = (o, parent) => {
   // GET /api/orders/:id does not return the coupon discount, so keep what /checkout/complete told us.
   if (parent?.couponDiscount > 0) write('km_order_meta', { ...read('km_order_meta', {}), [o.id]: { discount: parent.couponDiscount, payable: parent.payableTotal } });
 };
+// Order ids this device holds a guest token for, oldest first.
+export const savedOrderIds = () => Object.keys(read('km_order_tokens', {}));
 export const getOrderMeta = id => read('km_order_meta', {})[id];
 
 const MESSAGES = {
@@ -55,6 +57,7 @@ async function request(path, { method = 'GET', body, orderToken } = {}) {
     throw Object.assign(new Error('Could not reach the store. Check your connection and try again.'), { code: 'NETWORK' });
   }
   const data = await res.json().catch(() => ({}));
+  if (res.status === 401 && user) { setUserToken(''); window.dispatchEvent(new Event('km:unauthorized')); }
   if (!res.ok) throw Object.assign(new Error(data.error || `Request failed (${res.status})`), { status: res.status, code: data.code });
   return data;
 }
@@ -62,7 +65,7 @@ const post = (path, body) => request(path, { method: 'POST', body });
 
 export const api = {
   settings: () => request('/api/settings'),
-  // Kesar Mahal sells only the Pantry range: products shipped in days, anywhere in India.
+  // Kesar Mahal sells only the Pantry range: products shipped in days, anywhere in India. The server already returns only these for the x-storefront header; the filter is a belt-and-braces check.
   products: async () => (await request('/api/products')).filter(p => p.fulfillmentKind === 'DELIVERY_IN_DAYS'),
   // Send ids and quantities only; the server returns every price, GST amount and total.
   quote: (lines, couponCode, customerPhone) => post('/api/cart/quote', { lines, ...(couponCode ? { couponCode, customerPhone } : {}) }),
@@ -81,5 +84,5 @@ export const api = {
   myOrders: () => request('/api/me/orders'),
   addresses: () => request('/api/me/addresses'),
   addAddress: body => post('/api/me/addresses', body),
-  deleteAddress: id => request(`/api/me/addresses/${id}`, { method: 'DELETE' })
+  deleteAddress: id => request(`/api/me/addresses/${encodeURIComponent(id)}`, { method: 'DELETE' })
 };
