@@ -3,3 +3,21 @@ dist
 .env
 .env.*
 !.env.example
+*.local
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# logs
+*.log
+npm-debug.log*
+
+# local tooling
+.claude/
+.vercel
+
+# internal notes
+docs/
