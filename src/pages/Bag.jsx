@@ -55,7 +55,7 @@ export default function Bag() {
                 <div>{p && <Badge color={p.color}>{p.category}</Badge>}<div className="mt-2 font-display text-[25px] font-medium text-maroon">{p?.name || l.productId}</div>
                   <div className="text-[13px] text-muted">{[label, q && (q.baseAmount > 0 ? `${fmt(q.unitPrice)} each` : 'No price set')].filter(Boolean).join(' · ')}</div>
                   <TextBtn className="mt-1 text-[13px] text-muted" onClick={() => remove(key)}>Remove</TextBtn></div>
-                <Qty value={l.qty} set={n => setQty(key, n)} />
+                <Qty value={l.qty} set={n => setQty(key, n)} label={[p?.name, label].filter(Boolean).join(', ')} />
                 <span className="col-start-3 min-w-20 text-right text-[17px] font-medium sm:col-start-auto">{q ? fmt(q.baseAmount) : '…'}</span>
               </div>
             );
