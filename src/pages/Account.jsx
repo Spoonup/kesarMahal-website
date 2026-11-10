@@ -17,7 +17,8 @@ export default function Account() {
   const [addrs, setAddrs] = useState([]);
   const [form, setForm] = useState(null);
   const [err, setErr] = useState('');
-  const loadOrders = () => { setOrders(o => ({ ...o, status: 'loading' })); api.myOrders().then(all => { const tagged = all.some(o => o.storefront); setOrders({ status: 'ready', rows: tagged ? all.filter(o => o.storefront === 'kesarmahal') : all, mixed: !tagged, error: '' }); }).catch(e => setOrders({ status: 'error', rows: [], error: friendly(e) })); };
+  // The server already returns only this storefront's orders for x-storefront: kesarmahal.
+  const loadOrders = () => { setOrders(o => ({ ...o, status: 'loading' })); api.myOrders().then(rows => setOrders({ status: 'ready', rows: Array.isArray(rows) ? rows : [], error: '' })).catch(e => setOrders({ status: 'error', rows: [], error: friendly(e) })); };
   useEffect(() => { if (user) { loadOrders(); api.addresses().then(setAddrs).catch(() => {}); } }, [user]);
   if (!authReady) return <p className={cx('py-20', PX)} aria-busy="true">Loading…</p>;
   if (!user) return <Navigate to="/signin" replace />;
@@ -27,7 +28,7 @@ export default function Account() {
     try { const a = await api.addAddress({ ...form, line1: form.line1.trim(), city: form.city.trim() }); setAddrs(r => [...r, a]); setForm(null); } catch (ex) { setErr(friendly(ex)); }
   };
   const drop = async id => { try { await api.deleteAddress(id); setAddrs(r => r.filter(a => a.id !== id)); } catch (ex) { setErr(friendly(ex)); } };
-  const { rows, status, mixed } = orders;
+  const { rows, status } = orders;
   return (
     <div className={cx('grid gap-12 pb-[72px] pt-12 md:grid-cols-[240px_minmax(0,1fr)]', PX)}>
       <aside className="flex flex-col text-[15px]">
@@ -40,7 +41,6 @@ export default function Account() {
           <Label className="mb-2.5 block text-goldtext">Your orders</Label>
           {status === 'loading' && <p aria-busy="true" className="text-muted">Loading orders…</p>}
           {status === 'error' && <ErrorBox retry={loadOrders}>{orders.error}</ErrorBox>}
-          {status === 'ready' && mixed && rows.length > 0 && <p className="mb-2 text-[13px] text-muted">This list may also include orders placed on the SpoonUp site with the same account.</p>}
           {status === 'ready' && !rows.length && <div className="flex flex-col items-start gap-4"><H2>No orders yet.</H2><Btn to="/shop">SHOP THE HARVEST</Btn></div>}
           {rows.map(o => (
             <div key={o.id} className="grid grid-cols-[1fr_auto] items-center gap-x-5 gap-y-1 border-t border-line py-[18px] text-[14.5px] md:grid-cols-[110px_minmax(0,1fr)_110px_auto_auto]">

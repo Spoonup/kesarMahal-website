@@ -48,7 +48,7 @@ Frontend for Kesar Mahal ("Treasures from Kashmir"), a Spoonup sub-brand selling
 - Payment: online only (Razorpay, currently TEST keys on the connected backend) when `/api/settings` has `razorpayEnabled` and a key. Otherwise checkout shows that online payment is temporarily unavailable and never sends `paymentMethod: counter`
 - Footer newsletter box does nothing
 - No order email/SMS exists in the backend, so no copy may promise one. Track lists only orders saved on this device (no lookup by order number yet, see `docs/BACKEND-REQUESTS.md` #5)
-- Eat Now, plans, referrals and store credit are intentionally absent; no Google sign-in unless the backend enables it
+- Eat Now, plans, referrals and store credit are intentionally absent. Google sign-in runs when the backend reports `googleAuthEnabled`. `returnTo` is sent only for `https://kesarmahal.com` and `https://www.kesarmahal.com` (exact origin, no trailing slash); other origins omit it
 - Products without an `imageUrl` show the jaali placeholder; descriptions come from the API
 - No shipping fee: the quote has none. Prices are GST-exclusive; GST comes from the quote
 - Coupon discount is not in the order payload; the confirmation page shows it only on the device that placed it

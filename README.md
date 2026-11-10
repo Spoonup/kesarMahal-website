@@ -45,7 +45,7 @@ The app uses `BrowserRouter`, so the host must serve `index.html` for every path
 
 ## Google sign-in
 
-Uses the SpoonUp backend's server-side flow (`GET /api/auth/google` -> Google -> backend callback -> `/auth/google/callback?code=` -> `POST /api/auth/google/exchange`). The client ID/secret live only in the backend (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`); the storefront needs no Google env var. It works only when `/api/settings` reports `googleAuthEnabled` and the site and `/api` share an origin (dev proxy or production reverse proxy). See `docs/BACKEND-REQUESTS.md` #10.
+Uses the SpoonUp backend's server-side flow (`GET /api/auth/google` -> Google -> backend callback -> `/auth/google/callback?code=` -> `POST /api/auth/google/exchange`). The client ID/secret live only in the backend (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`); the storefront needs no Google env var. It works only when `/api/settings` reports `googleAuthEnabled`. On https://kesarmahal.com and https://www.kesarmahal.com the start URL sends `returnTo` as that exact origin (no trailing slash) so Google can come back to this site when the API is on another host. Any other origin, including localhost, omits `returnTo` (the backend answers 400 `INVALID_RETURN_TO` for an origin that is not allowlisted) and relies on the dev proxy. See `docs/BACKEND-REQUESTS.md` #10.
 
 ## Security headers and CSP
 

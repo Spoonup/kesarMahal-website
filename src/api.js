@@ -28,6 +28,8 @@ const MESSAGES = {
   EMPTY_CART: 'Your bag is empty.',
   CART_TOO_LARGE: 'A bag can hold at most 50 different items.',
   CHECKOUT_EXPIRED: 'This checkout expired. Please try again.',
+  ONLINE_PAYMENT_UNAVAILABLE: 'Online payment is temporarily unavailable. Please try again in a little while.',
+  PAYMENT_METHOD_NOT_AVAILABLE: 'This store takes online payment only.',
   COUPON_NOT_FOUND: 'That coupon code is not valid.',
   COUPON_EXPIRED: 'That coupon has expired.',
   COUPON_INACTIVE: 'That coupon is not active.',
@@ -38,13 +40,15 @@ const MESSAGES = {
   COUPON_NOT_APPLICABLE: 'That coupon does not apply to the items in your bag.',
   COUPON_NEEDS_IDENTITY: 'Enter your mobile number or sign in to use that coupon.',
   INVALID_COUPON: 'That coupon code is not valid.',
-  GATEWAY_UNAVAILABLE: 'That payment method is not available.',
+  GATEWAY_UNAVAILABLE: 'That payment method is not available right now. Please try again in a little while.',
   PAYMENT_AMOUNT_MISMATCH: 'The payment did not match the order total. Please contact us.',
-  NOT_AVAILABLE_ON_STOREFRONT: 'That item is not sold on this store. Remove it from your bag to continue.'
+  NOT_AVAILABLE_ON_STOREFRONT: 'That item is not sold on Kesar Mahal. Remove it from your bag to continue.',
+  INVALID_RETURN_TO: 'Google sign-in could not return to this site. Please use the Kesar Mahal website and try again.'
 };
 const GENERIC = 'Something went wrong. Please try again.';
-// The server's own `error` text wins; the map only fills in for errors that carry a code but no text (e.g. coupon `reason`).
-export const friendly = e => e?.serverMessage || MESSAGES[e?.code] || e?.message || GENERIC;
+// Curated copy wins for these codes (the server text omits what the customer should do). Everything else keeps the server's own `error` text; the map fills in when a code arrives with no text.
+const PREFER_LOCAL = new Set(['NOT_AVAILABLE_ON_STOREFRONT', 'ONLINE_PAYMENT_UNAVAILABLE', 'PAYMENT_METHOD_NOT_AVAILABLE', 'GATEWAY_UNAVAILABLE', 'INVALID_RETURN_TO']);
+export const friendly = e => (PREFER_LOCAL.has(e?.code) ? MESSAGES[e.code] : '') || e?.serverMessage || MESSAGES[e?.code] || e?.message || GENERIC;
 
 async function request(path, { method = 'GET', body, orderToken } = {}) {
   const headers = { 'x-storefront': 'kesarmahal' };
@@ -78,11 +82,20 @@ export const api = {
   prepare: body => post('/api/checkout/prepare', body),
   complete: body => post('/api/checkout/complete', body),
   abandon: checkoutId => post('/api/checkout/abandon', { checkoutId }).catch(() => ({})),
+  // Read one order. This storefront never creates orders through POST /api/orders or /api/parent-orders; checkout is prepare + complete only. Every call above sends x-storefront.
   order: id => request(`/api/orders/${encodeURIComponent(id)}`, { orderToken: getOrderToken(id) }),
   signup: body => post('/api/auth/signup', body),
   login: body => post('/api/auth/login', body),
   // Google sign-in is a server-side redirect flow: the browser is sent to googleStartUrl, Google returns to the backend, which redirects to /auth/google/callback?code=...; googleExchange swaps that one-time code for the session.
-  googleStartUrl: next => `${BASE}/api/auth/google${next ? `?next=${encodeURIComponent(next)}` : ''}`,
+  // returnTo must be an exact origin in the backend's STOREFRONT_ORIGINS. Anything else (localhost, previews) is a 400, so it is sent only for the live site. Omitting it keeps the backend's own callback, which is the dev-proxy path.
+  googleStartUrl: next => {
+    const params = new URLSearchParams();
+    const origin = window.location.origin;
+    if (origin === 'https://kesarmahal.com' || origin === 'https://www.kesarmahal.com') params.set('returnTo', origin);
+    if (next) params.set('next', next);
+    const q = params.toString();
+    return `${BASE}/api/auth/google${q ? `?${q}` : ''}`;
+  },
   googleExchange: code => post('/api/auth/google/exchange', { code }),
   logout: () => post('/api/auth/logout').catch(() => ({})),
   me: () => request('/api/auth/me'),
