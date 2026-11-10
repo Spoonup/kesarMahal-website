@@ -12,7 +12,7 @@ React + Vite + React Router + Tailwind v4. Catalogue, prices, orders and account
 2. `npm run dev`. Vite proxies `/api/*` to `http://localhost:5101`, so the browser makes same-origin calls and there are no CORS issues. Use `DEV_API_TARGET=http://host:port npm run dev` if the backend runs elsewhere.
 3. Env vars (see `.env.example`; never commit real `.env` files, and nothing secret belongs in this repo):
    - `VITE_API_BASE`: backend origin for production builds, e.g. `https://api.example.com`. Leave empty when the site and `/api` share a domain (reverse proxy). It is baked in at build time: `VITE_API_BASE=https://api.example.com npm run build`. A cross-origin API must allow this site in its CORS config.
-4. Payment: if the backend reports `razorpayEnabled` in `/api/settings`, checkout opens Razorpay (the connected backend currently has test keys). Otherwise it places a "pay on delivery" order. See `docs/BACKEND-REQUESTS.md`.
+4. Payment is online only (Razorpay). Checkout opens it when `/api/settings` reports `razorpayEnabled` and a key. If settings fail to load, or online payment is switched off, checkout says online payment is temporarily unavailable and does not place the order. There is no pay-on-delivery option. The connected backend currently has test keys. See `docs/BACKEND-REQUESTS.md`.
 
 ## Seeding a local backend
 
@@ -24,7 +24,7 @@ React + Vite + React Router + Tailwind v4. Catalogue, prices, orders and account
 
 The storefront never points at production by default. Only the owner switches it on, by building with the env var: `VITE_API_BASE=https://spoonupfoods.com npm run build` (check CORS first, see `docs/BACKEND-REQUESTS.md`). The same build then shows the real catalogue.
 
-Stubs: the footer newsletter box is not wired to anything and lot tracing is hidden (demo data only). Launch audit: `docs/GAPS.md`.
+Stubs: the footer newsletter box is not wired to anything. Launch audit: `docs/GAPS.md`.
 
 ## Deploying
 

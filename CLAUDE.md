@@ -21,7 +21,7 @@ Frontend for Kesar Mahal ("Treasures from Kashmir"), a Spoonup sub-brand selling
 ## Layout
 
 - `src/api.js`: the only module that calls the SpoonUp backend (base from `VITE_API_BASE`, headers `x-storefront` / `x-user-token` / `x-order-token`, error code to message map, guest order tokens in `localStorage`)
-- `src/data.js`: `fmt`, shelf order, `adapt` (API product to UI product; drops sizes with a null/0 price, so a product with none is `unpriced` and unavailable), `statusInfo` (honest wording for every backend order status), gift boxes (`BOXES`, `giftNotes`), kesar `grades`, sample `lots` (demo only, not rendered)
+- `src/data.js`: `fmt`, shelf order, `adapt` (API product to UI product; drops sizes with a null/0 price, so a product with none is `unpriced` and unavailable), `statusInfo` (honest wording for every backend order status), gift boxes (`BOXES`, `giftNotes`), kesar `grades`
 - `src/store.jsx`: live catalogue (Pantry only: `fulfillmentKind === 'DELIVERY_IN_DAYS'`), bag (`{productId, sizeId, qty, gift?}` only, no prices), gift-box details, session user, `useQuote` (prices the bag via `POST /api/cart/quote`)
 - `src/usePageMeta.js` + `src/site.js`: per-route title/description/canonical/OG tags; `SITE_URL` is a placeholder the owner must set (also in `index.html`, `public/robots.txt`, `public/sitemap.xml`)
 - `src/components/`: `Chrome.jsx` (header/footer), `ui.jsx` (shared styled pieces: Btn, Label, Eyebrow, H1/H2, Photo, Badge, Arch, ProductCard, Skeleton, ErrorBox, Qty, Field, Line, Prose), `Summary.jsx` (server-quoted totals, `hasUnpriced` guard)
@@ -45,8 +45,8 @@ Frontend for Kesar Mahal ("Treasures from Kashmir"), a Spoonup sub-brand selling
 
 ## Known stubs
 
-- Payment: online (Razorpay, currently TEST keys on the connected backend) when `/api/settings` has `razorpayEnabled`; otherwise "pay on delivery" (`paymentMethod: counter`)
-- Lot tracing: `lots` in `src/data.js` holds one sample lot and `LotTrace` in `Home.jsx` is not rendered; footer newsletter box does nothing
+- Payment: online only (Razorpay, currently TEST keys on the connected backend) when `/api/settings` has `razorpayEnabled` and a key. Otherwise checkout shows that online payment is temporarily unavailable and never sends `paymentMethod: counter`
+- Footer newsletter box does nothing
 - No order email/SMS exists in the backend, so no copy may promise one. Track lists only orders saved on this device (no lookup by order number yet, see `docs/BACKEND-REQUESTS.md` #5)
 - Eat Now, plans, referrals and store credit are intentionally absent; no Google sign-in unless the backend enables it
 - Products without an `imageUrl` show the jaali placeholder; descriptions come from the API
