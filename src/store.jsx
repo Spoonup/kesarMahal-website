@@ -34,11 +34,25 @@ export function StoreProvider({ children }) {
       .then(rows => setCatalogue({ status: 'ready', products: sortShelf(rows.map(adapt)), error: '' }))
       .catch(e => setCatalogue({ status: 'error', products: [], error: e.message }));
   }, []);
-  useEffect(() => { loadCatalogue(); api.settings().then(setSettings).catch(() => setSettings({})); }, [loadCatalogue]);
+  // `settings` stays null on failure (never {}), so checkout cannot mistake "could not load" for "online payment off".
+  const [settingsError, setSettingsError] = useState('');
+  const loadSettings = useCallback(() => {
+    setSettings(null); setSettingsError('');
+    api.settings().then(setSettings).catch(e => setSettingsError(e.message));
+  }, []);
+  useEffect(() => { loadCatalogue(); loadSettings(); }, [loadCatalogue, loadSettings]);
 
+  // Only a real 401 ends the session (request() clears km_token then). A network blip or 5xx is retried and keeps the token.
   useEffect(() => {
     if (!getUserToken()) return;
-    api.me().then(r => setUser(r.user)).catch(e => { if (e.status === 401) setUserToken(''); }).finally(() => setAuthReady(true));
+    let live = true;
+    const attempt = n => api.me().then(r => { if (live) { setUser(r.user); setAuthReady(true); } }).catch(e => {
+      if (!live) return;
+      if (e.status !== 401 && n < 3) setTimeout(() => attempt(n + 1), 1500 * n);
+      else setAuthReady(true);
+    });
+    attempt(1);
+    return () => { live = false; };
   }, []);
 
   // Once the catalogue is known, drop bag lines whose product or size no longer exists or is sold out.
@@ -83,7 +97,7 @@ export function StoreProvider({ children }) {
   useEffect(() => { const h = () => setUser(null); window.addEventListener('km:unauthorized', h); return () => window.removeEventListener('km:unauthorized', h); }, []);
 
   return (
-    <Ctx.Provider value={{ lines, gifts, addGift, removeGift, add, setQty, remove, clear, count, catalogue, loadCatalogue, byId, settings, user, authReady, signIn, signOut, toast }}>
+    <Ctx.Provider value={{ lines, gifts, addGift, removeGift, add, setQty, remove, clear, count, catalogue, loadCatalogue, byId, settings, settingsError, loadSettings, user, authReady, signIn, signOut, toast }}>
       {children}
     </Ctx.Provider>
   );
