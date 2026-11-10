@@ -42,7 +42,9 @@ const MESSAGES = {
   PAYMENT_AMOUNT_MISMATCH: 'The payment did not match the order total. Please contact us.',
   NOT_AVAILABLE_ON_STOREFRONT: 'That item is not sold on this store. Remove it from your bag to continue.'
 };
-export const friendly = e => MESSAGES[e?.code] || e?.message || 'Something went wrong. Please try again.';
+const GENERIC = 'Something went wrong. Please try again.';
+// The server's own `error` text wins; the map only fills in for errors that carry a code but no text (e.g. coupon `reason`).
+export const friendly = e => e?.serverMessage || MESSAGES[e?.code] || e?.message || GENERIC;
 
 async function request(path, { method = 'GET', body, orderToken } = {}) {
   const headers = { 'x-storefront': 'kesarmahal' };
@@ -58,7 +60,10 @@ async function request(path, { method = 'GET', body, orderToken } = {}) {
   }
   const data = await res.json().catch(() => ({}));
   if (res.status === 401 && user) { setUserToken(''); window.dispatchEvent(new Event('km:unauthorized')); }
-  if (!res.ok) throw Object.assign(new Error(data.error || `Request failed (${res.status})`), { status: res.status, code: data.code });
+  if (!res.ok) {
+    const serverMessage = typeof data.error === 'string' ? data.error : '';
+    throw Object.assign(new Error(serverMessage || MESSAGES[data.code] || GENERIC), { status: res.status, code: data.code, serverMessage });
+  }
   return data;
 }
 const post = (path, body) => request(path, { method: 'POST', body });
