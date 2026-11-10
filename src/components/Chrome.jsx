@@ -28,7 +28,9 @@ export function Header() {
   const [params] = useSearchParams();
   const [open, setOpen] = useState(false);
   const room = pathname === '/shop' ? params.get('category') : null;
-  const name = user?.name?.trim().split(/\s+/)[0] || user?.email || '';
+  const username = String(user?.username || '').trim();
+  const emailLocal = String(user?.email || '').split('@')[0];
+  const name = username || (emailLocal.length > 18 ? `${emailLocal.slice(0, 16)}…` : emailLocal) || 'Account';
   const pill = 'min-h-11 items-center gap-2 rounded-full border px-5 text-[13px] tracking-[.04em] transition-colors';
   const mob = 'px-5 py-3.5 nav:p-0';
   return (
