@@ -54,11 +54,11 @@ export const lineKey = (productId, sizeId) => `${productId}|${sizeId ?? ''}`;
 export const bagKey = l => lineKey(l.productId, l.sizeId) + (l.gift ? `|${l.gift}` : '');
 
 // Gift boxes. The box fee is a real catalogue product the owner creates in the SpoonUp admin (see docs/GIFT-BOXES.md),
-// found by exact name. `price` is the admin reference only: it is never shown or charged, the server quote is.
+// found by exact name. The price always comes from that product, via the server quote.
 export const BOXES = [
-  { key: 'Shikara', n: 3, product: 'Gift Box - Shikara', price: 250 },
-  { key: 'Chinar', n: 4, product: 'Gift Box - Chinar', price: 350 },
-  { key: 'Mahal', n: 6, product: 'Gift Box - Mahal', price: 500 }
+  { key: 'Shikara', n: 3, product: 'Gift Box - Shikara' },
+  { key: 'Chinar', n: 4, product: 'Gift Box - Chinar' },
+  { key: 'Mahal', n: 6, product: 'Gift Box - Mahal' }
 ];
 export const BOX_COLOURS = [{ name: 'Maroon', hex: '#6B1426' }, { name: 'Ivory', hex: '#F5F1EA' }];
 export const NOTE_MAX = 120;
@@ -89,8 +89,6 @@ export const grades = [
   { name: 'Lacha', tag: 'Classic', bar: '70%', d: 'Stigma with a little yellow style attached. Gentler, everyday.', use: 'For milk, sweets, daily cooking' },
   { name: 'Pushal', tag: 'Whole', bar: '45%', d: 'Loose whole threads with more style. Mild, economical.', use: 'For bulk cooking & infusions' }
 ];
-// Only lot in the mockup; replace with an API lookup.
-export const lots = { 'KM-PMP-2611': { product: 'Mongra Kesar', picked: '12 Oct 2026', grower: 'Bhat family, Pampore' } };
 
 // Honest wording for a backend order status (Pantry flow: pending, sourcing, packed, shipped, delivered, cancelled,
 // rejected, returned, refunded; plus the older immediate-order words). `step` is the position on the journey strip, or -1
