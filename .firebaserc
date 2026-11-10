@@ -1,0 +1,14 @@
+{
+  "projects": {
+    "default": "spoonup-508319"
+  },
+  "targets": {
+    "spoonup-508319": {
+      "hosting": {
+        "kesarmahal": [
+          "kesarmahal"
+        ]
+      }
+    }
+  }
+}

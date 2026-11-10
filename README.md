@@ -20,28 +20,53 @@ React + Vite + React Router + Tailwind v4. Catalogue, prices, orders and account
 
     ADMIN_USERNAME=<local test admin> ADMIN_PASSWORD=<local test admin password> node scripts/seed-local-from-live.mjs
 
-## Switching to production later
+## Production API
 
-The storefront never points at production by default. Only the owner switches it on, by building with the env var: `VITE_API_BASE=https://spoonupfoods.com npm run build` (check CORS first, see `docs/BACKEND-REQUESTS.md`). The same build then shows the real catalogue.
+`npm run build` reads the committed `.env.production`, which holds one non-secret value: `VITE_API_BASE=https://spoonupfoods.com`. Every production build (local or CI) talks to the live backend. `npm run dev` does not read that file and keeps using the Vite proxy. The backend must allow `https://kesarmahal.com` and `https://www.kesarmahal.com` in `CORS_ORIGINS` (requests send the custom `x-storefront` header, so the browser preflights them).
 
-Stubs: the footer newsletter box is not wired to anything and lot tracing is hidden (demo data only). Launch audit: `docs/GAPS.md`.
+Stubs: the footer newsletter box is not wired to anything and lot tracing is hidden (demo data only). Launch audit: `docs/GAPS.md`. `npm run check:launch` fails while any `[to confirm]` placeholder remains in `src/` (legal and contact copy the owner is still supplying).
 
-## Deploying
+## Deploy (Firebase Hosting)
 
-The app uses `BrowserRouter`, so the host must serve `index.html` for every path: `vercel.json` (Vercel) and `public/_redirects` (Netlify/Cloudflare Pages) both do this; use the one for your host. Set `VITE_API_BASE` at build time or add an `/api` rewrite on the host. A cross-origin backend needs CORS for this site.
+Hosting is the GCP/Firebase project `spoonup-508319`, on a dedicated site (target `kesarmahal` mapped to site id `kesarmahal` in `.firebaserc`), so the project's default site is never touched. `firebase.json` serves `dist/`, rewrites every path to `/index.html` (the app uses `BrowserRouter`) and sets the cache and security headers.
 
-## Site URL (owner must set)
+- `.github/workflows/firebase-hosting-merge.yml` runs on every push to `main`: `npm ci`, `npm run check:launch`, `npm run build`, then a live-channel deploy. Live deploys never overlap. **`check:launch` is meant to fail, and to block the live deploy, until the `[to confirm]` placeholders in `src/` are filled in.**
+- `.github/workflows/firebase-hosting-pull-request.yml` builds every pull request. Pull requests from this repo (not forks, which get no secrets) also get a 7-day preview channel. Preview URLs are `*.web.app` origins, so API calls from them fail until the backend's CORS allows that origin.
 
-`https://kesarmahal.example` is a placeholder (reserved TLD, not a real domain). Replace it with the real site URL in `src/site.js`, `index.html` (canonical, `og:url`, `og:image`, `twitter:image`), `public/robots.txt` and `public/sitemap.xml`. Find every spot with `grep -rn kesarmahal.example index.html public src`. Check pages for leftover placeholders with `npm run check:launch`.
+Required GitHub secret: `FIREBASE_SERVICE_ACCOUNT_SPOONUP_508319` (the JSON key of a deploy service account).
 
-## API routing on Vercel (example, not enabled)
+One-time setup:
 
-`vercel.json` only rewrites to `index.html`. Without a same-origin `/api` or `VITE_API_BASE`, every page shows "Could not load the pantry". To proxy `/api` to the backend, put this rewrite BEFORE the catch-all (replace the host with the owner's real backend URL):
+    # 1. Deploy service account.
+    #    Firebase Hosting Admin deploys. API Keys Viewer is required by the Firebase CLI deploys this action runs.
+    #    roles/iam.serviceAccountUser is not needed. Cloud Run Viewer is not needed: there are no Cloud Run or Functions rewrites.
+    gcloud iam service-accounts create github-kesarmahal-deploy --project spoonup-508319 --display-name "GitHub Actions: Kesar Mahal Hosting deploy"
+    SA=github-kesarmahal-deploy@spoonup-508319.iam.gserviceaccount.com
+    gcloud projects add-iam-policy-binding spoonup-508319 --member "serviceAccount:$SA" --role roles/firebasehosting.admin --condition=None
+    gcloud projects add-iam-policy-binding spoonup-508319 --member "serviceAccount:$SA" --role roles/serviceusage.apiKeysViewer --condition=None
+    # Optional, only if the project uses Firebase Authentication: lets the action add preview URLs to Auth authorized domains.
+    # gcloud projects add-iam-policy-binding spoonup-508319 --member "serviceAccount:$SA" --role roles/firebaseauth.admin --condition=None
 
-    {"rewrites":[
-      {"source":"/api/(.*)","destination":"https://YOUR-BACKEND-HOST/api/$1"},
-      {"source":"/(.*)","destination":"/index.html"}
-    ]}
+    # 2. Key into the GitHub secret, then delete the local copy.
+    gcloud iam service-accounts keys create key.json --iam-account "$SA" --project spoonup-508319
+    gh secret set FIREBASE_SERVICE_ACCOUNT_SPOONUP_508319 --repo Spoonup/kesarMahal-website < key.json
+    rm -P key.json   # macOS; use `shred -u key.json` on Linux
+
+    # 3. Hosting site and target. Site ids are global; if `kesarmahal` is taken, use `kesarmahal-web`
+    #    and put that id in .firebaserc under targets.spoonup-508319.hosting.kesarmahal.
+    firebase login
+    firebase hosting:sites:create kesarmahal --project spoonup-508319
+    firebase target:apply hosting kesarmahal kesarmahal --project spoonup-508319
+
+Custom domain: Firebase console, Hosting, site `kesarmahal`, Add custom domain, `kesarmahal.com`, then again for `www.kesarmahal.com` (redirect to the apex). At the registrar, add the records the console shows: a TXT record on the apex to prove ownership, then the A records it lists (and usually a CNAME for `www`). Remove any other A or AAAA records on the apex. The certificate is issued automatically once DNS resolves, which can take up to 24 hours.
+
+Manual deploy (after `firebase login`): `npm run build && firebase deploy --only hosting:kesarmahal --project spoonup-508319`.
+
+`vercel.json`, `public/_headers` and `public/_redirects` are obsolete. Firebase Hosting does not read them. They are kept for reference; their CSP is older than the one in `firebase.json`.
+
+## Site URL
+
+The site URL is `https://kesarmahal.com`, set in `src/site.js`, `index.html` (canonical, `og:url`, `og:image`, `twitter:image`), `public/robots.txt` and `public/sitemap.xml`. Keep the four in sync.
 
 ## Google sign-in
 
@@ -49,4 +74,4 @@ Uses the SpoonUp backend's server-side flow (`GET /api/auth/google` -> Google ->
 
 ## Security headers and CSP
 
-`vercel.json` (Vercel) and `public/_headers` (Netlify) send a CSP plus nosniff, DENY framing, referrer policy, HSTS and a permissions policy. The app has no inline scripts; it loads Razorpay's script and frame, Google Fonts CSS/fonts and product images over https. `connect-src` is `'self'` plus Razorpay: if `/api` is NOT same-origin (a `VITE_API_BASE` pointing at another host), add that backend origin to `connect-src` in both files or every API call is blocked. Keep the two files in sync.
+`firebase.json` is what gets deployed: a CSP plus nosniff, DENY framing (`frame-ancestors 'none'` and `X-Frame-Options`), `Referrer-Policy: strict-origin-when-cross-origin`, HSTS and a permissions policy. The app has no inline scripts. It loads Razorpay's script and frame, Google Fonts, and product images from `https://storage.googleapis.com`. `connect-src` allows `https://spoonupfoods.com` plus Razorpay (`api`, `lumberjack`, `checkout`). If `VITE_API_BASE` changes, update that `connect-src` to match. `vercel.json` and `public/_headers` are the older copies and are not deployed.
