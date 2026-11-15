@@ -1,0 +1,42 @@
+name: Deploy to Firebase Hosting (live)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: firebase-hosting-live
+  cancel-in-progress: false
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Intentionally blocking. The live deploy stays red until the owner replaces the
+      # "[to confirm]" placeholders in src/ (legal and contact content still being written).
+      - run: npm run check:launch
+
+      # VITE_API_BASE comes from the committed .env.production.
+      - run: npm run build
+
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SPOONUP_508319 }}
+          projectId: spoonup-508319
+          target: kesarmahal
+          channelId: live

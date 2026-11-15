@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- OWNER: replace https://kesarmahal.example with the real site URL. Product pages are not listed: they come from the API (see docs/GAPS.md F-P1-9). -->
+<!-- Product pages are not listed: they come from the API (see docs/GAPS.md F-P1-9). -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://kesarmahal.example/</loc></url>
-  <url><loc>https://kesarmahal.example/shop</loc></url>
-  <url><loc>https://kesarmahal.example/gifting</loc></url>
-  <url><loc>https://kesarmahal.example/story</loc></url>
-  <url><loc>https://kesarmahal.example/contact</loc></url>
-  <url><loc>https://kesarmahal.example/shipping</loc></url>
-  <url><loc>https://kesarmahal.example/returns</loc></url>
-  <url><loc>https://kesarmahal.example/faq</loc></url>
-  <url><loc>https://kesarmahal.example/storage</loc></url>
-  <url><loc>https://kesarmahal.example/track</loc></url>
-  <url><loc>https://kesarmahal.example/privacy</loc></url>
-  <url><loc>https://kesarmahal.example/terms</loc></url>
+  <url><loc>https://kesarmahal.com/</loc></url>
+  <url><loc>https://kesarmahal.com/shop</loc></url>
+  <url><loc>https://kesarmahal.com/gifting</loc></url>
+  <url><loc>https://kesarmahal.com/story</loc></url>
+  <url><loc>https://kesarmahal.com/contact</loc></url>
+  <url><loc>https://kesarmahal.com/shipping</loc></url>
+  <url><loc>https://kesarmahal.com/returns</loc></url>
+  <url><loc>https://kesarmahal.com/faq</loc></url>
+  <url><loc>https://kesarmahal.com/storage</loc></url>
+  <url><loc>https://kesarmahal.com/track</loc></url>
+  <url><loc>https://kesarmahal.com/privacy</loc></url>
+  <url><loc>https://kesarmahal.com/terms</loc></url>
 </urlset>
