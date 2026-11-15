@@ -20,7 +20,11 @@ export default function GoogleCallback() {
     if (!code || ran.current) return;
     ran.current = true;
     api.googleExchange(code)
-      .then(r => { signIn(r); nav(safeNext(next) || '/account', { replace: true }); })
+      .then(r => {
+        // newAccount and referral ride along. This site has no referral programme and never sends `ref`, so a referral result is not shown. The account is signed in either way.
+        signIn({ token: r.token, user: r.user });
+        nav(safeNext(next) || '/account', { replace: true });
+      })
       .catch(e => setErr(friendly(e)));
   }, [code, next, signIn, nav]);
   return (

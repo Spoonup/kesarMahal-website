@@ -146,7 +146,10 @@ export default function Checkout() {
     } catch (ex) {
       // Retries ran out, or the server refused. The money may already have moved, so Pay stays gone.
       setConfirm('stuck');
-      setErr(transient(ex) ? '' : friendly(ex));
+      // 410 after a captured payment means the checkout expired, not that the customer should pay again.
+      setErr(ex?.code === 'CHECKOUT_EXPIRED' || ex?.status === 410
+        ? 'Your payment was received, but the checkout expired before we could confirm the order. Please do not pay again. Contact us with the payment reference below.'
+        : transient(ex) ? '' : friendly(ex));
     } finally {
       finishing.current = false;
     }
@@ -190,7 +193,7 @@ export default function Checkout() {
   const set = k => e => setF(s => ({ ...s, [k]: e.target.value }));
   const errors = tried ? validate(f) : {};
   const errList = FIELDS.filter(k => errors[k]);
-  // Kesar Mahal is online payment only. Pay on delivery is never offered, whatever settings say.
+  // This storefront's own Razorpay account (settings.razorpayEnabled + razorpayKeyId). counterPaymentEnabled and cashfreeEnabled are false here and are never offered.
   const online = Boolean(settings && !settingsError && settings.razorpayEnabled && settings.razorpayKeyId);
   const total = quote ? payable(quote) : 0;
   const blocked = hasUnpriced(quote);
