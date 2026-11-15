@@ -27,7 +27,8 @@ export default function Product() {
   if (!p) return <NotFound />;
   const s = p.sizes[size] || p.sizes[0]; // undefined when the product has no valid price
   const ok = p.available && Boolean(s);
-  const isSaffron = p.category === 'Saffron';
+  // Both backend categories "Kesar" and "Saffron" sit on the Kesar shelf (see shelfOf).
+  const isSaffron = p.room === 'Kesar';
   const more = catalogue.products.filter(x => x.id !== p.id && x.category === p.category).slice(0, 4);
   return (
     <>
@@ -49,7 +50,7 @@ export default function Product() {
           )}
           <div className="flex flex-wrap items-stretch gap-3">
             <div className="inline-flex items-center border border-maroon">
-              <button type="button" aria-label="Less" className="h-[52px] w-11 text-xl text-maroon" onClick={() => setQty(q => Math.max(1, q - 1))}>−</button><span className="w-8 text-center font-medium" aria-live="polite">{qty}</span><button type="button" aria-label="More" className="h-[52px] w-11 text-xl text-maroon" onClick={() => setQty(q => Math.min(MAX_QTY, q + 1))}>+</button>
+              <button type="button" aria-label={`Less ${p.name}`} className="h-[52px] w-11 text-xl text-maroon" onClick={() => setQty(q => Math.max(1, q - 1))}>−</button><span className="w-8 text-center font-medium" aria-live="polite">{qty}</span><button type="button" aria-label={`More ${p.name}`} className="h-[52px] w-11 text-xl text-maroon" onClick={() => setQty(q => Math.min(MAX_QTY, q + 1))}>+</button>
             </div>
             <Btn className="flex-1" disabled={!ok} onClick={() => add(p, s, qty)}>{ok ? `ADD TO BAG · ${fmt(s.price * qty)}` : p.unpriced ? 'UNAVAILABLE' : 'SOLD OUT'}</Btn>
           </div>

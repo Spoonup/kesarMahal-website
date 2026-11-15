@@ -101,15 +101,15 @@ export const Skeleton = ({ n = 6, className = cx('pb-[72px]', PX) }) => (
 export const ErrorBox = ({ children, retry, className }) => (
   <div role="alert" className={cx('flex flex-col items-start gap-3 border border-kesar bg-ivory p-4 text-[14.5px] text-kesar', className)}>
     <span>{children}</span>
-    {retry && <Btn sm ghost onClick={retry}>TRY AGAIN</Btn>}
+    {retry && <Btn sm ghost type="button" onClick={retry}>TRY AGAIN</Btn>}
   </div>
 );
 
-export const Qty = ({ value, set, big }) => (
+export const Qty = ({ value, set, big, label }) => (
   <div className={cx('inline-flex items-center border', big ? 'border-maroon' : 'border-line')}>
-    <button type="button" className={cx('text-maroon', big ? 'h-[52px] w-11 text-xl' : 'w-[34px] py-2')} onClick={() => set(value - 1)} aria-label="Less">−</button>
+    <button type="button" className={cx('text-maroon', big ? 'h-[52px] w-11 text-xl' : 'w-[34px] py-2')} onClick={() => set(value - 1)} aria-label={label ? `Less ${label}` : 'Less'}>−</button>
     <span className={cx('text-center', big ? 'w-8 font-medium' : 'w-6')} aria-live="polite">{value}</span>
-    <button type="button" className={cx('text-maroon', big ? 'h-[52px] w-11 text-xl' : 'w-[34px] py-2')} onClick={() => set(value + 1)} aria-label="More">+</button>
+    <button type="button" className={cx('text-maroon', big ? 'h-[52px] w-11 text-xl' : 'w-[34px] py-2')} onClick={() => set(value + 1)} aria-label={label ? `More ${label}` : 'More'}>+</button>
   </div>
 );
 
@@ -117,7 +117,7 @@ export const Field = ({ label, className, area, error, id, ...p }) => {
   const C = area ? 'textarea' : 'input';
   return (
     <div className="flex flex-col gap-1">
-      <label className={cx('flex flex-col gap-0.5 border bg-ivory px-3.5 py-2.5 focus-within:border-maroon focus-within:ring-2 focus-within:ring-maroon', error ? 'border-kesar' : 'border-field', className)}>
+      <label htmlFor={id || undefined} className={cx('flex flex-col gap-0.5 border bg-ivory px-3.5 py-2.5 focus-within:border-maroon focus-within:ring-2 focus-within:ring-maroon', error ? 'border-kesar' : 'border-field', className)}>
         <span className="text-[11px] text-muted">{label}</span>
         <C id={id} aria-invalid={error ? true : undefined} aria-describedby={error && id ? `${id}-err` : undefined} className="w-full bg-transparent py-0.5 text-[15px]" {...p} />
       </label>

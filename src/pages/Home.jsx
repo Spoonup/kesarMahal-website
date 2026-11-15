@@ -1,7 +1,6 @@
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useStore } from '../store';
-import { lots, categoriesOf, isBox } from '../data';
+import { categoriesOf, isBox } from '../data';
 import { ProductCard, Skeleton, ErrorBox, Photo, SectionHead, Btn, ULink, Eyebrow, H2, Diamond, Arch, PX, cx } from '../components/ui';
 import usePageMeta from '../usePageMeta';
 
@@ -10,22 +9,6 @@ const steps = [
   ['II', 'See the price first', 'Prices are quoted by our server, before GST. GST is added at checkout, and we charge no delivery fee.'],
   ['III', 'Shipped across India', 'Pantry orders ship within days. Your order page shows the expected ship date and its status.']
 ];
-
-// Demo only (one sample lot, see docs/GAPS.md F-P1-7). Not rendered anywhere until lots come from the backend.
-export function LotTrace() {
-  const [code, setCode] = useState('');
-  const [res, setRes] = useState(null);
-  return (
-    <div>
-      <form className="flex max-w-[420px] border-b border-gold2" onSubmit={e => { e.preventDefault(); setRes(lots[code.trim().toUpperCase()] || 'none'); }}>
-        <input value={code} onChange={e => setCode(e.target.value)} placeholder="KM-PMP-____" aria-label="Lot number" className="w-full bg-transparent py-3 font-mono text-[15px] text-gold2 placeholder:text-gold2/60" />
-        <button className="font-cinzel text-[11px] uppercase tracking-[.24em] text-ivory">Trace</button>
-      </form>
-      {res === 'none' && <p className="mt-2.5 text-[13px]">We couldn’t find that lot. Check the code on the back of the pack.</p>}
-      {res && res !== 'none' && <p className="mt-2.5 text-[13px]">{res.product} · picked {res.picked} · {res.grower}</p>}
-    </div>
-  );
-}
 
 const Trust = () => (
   <div className={cx('flex flex-wrap justify-between gap-3 border-y border-line bg-ivory py-[18px] font-cinzel text-[11.5px] uppercase tracking-[.22em] text-pine', PX)}>
