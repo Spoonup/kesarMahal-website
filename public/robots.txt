@@ -1,4 +1,3 @@
-# OWNER: replace https://kesarmahal.example with the real site URL.
 User-agent: *
 Allow: /
 Disallow: /bag
@@ -8,4 +7,4 @@ Disallow: /signin
 Disallow: /confirmed/
 Disallow: /auth/
 
-Sitemap: https://kesarmahal.example/sitemap.xml
+Sitemap: https://kesarmahal.com/sitemap.xml
